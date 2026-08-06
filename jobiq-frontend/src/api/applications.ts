@@ -1,4 +1,5 @@
 import { apiClient } from './client';
+import { Opportunity } from './opportunities';
 
 export interface Application {
   id: number;
@@ -11,6 +12,7 @@ export interface Application {
   salary_offered?: number | null;
   rejected_reason?: string | null;
   source_application_url?: string | null;
+  opportunity?: Opportunity | null;
   created_at: string;
   updated_at: string;
 }

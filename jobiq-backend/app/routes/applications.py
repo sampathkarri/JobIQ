@@ -11,6 +11,7 @@ from app.core.database import get_db
 from app.models.application import Application
 from app.models.opportunity import Opportunity
 from app.models.user import User
+from app.routes.opportunities import _opportunity_to_read
 from app.schemas.application import (
     ApplicationCreate,
     ApplicationListResponse,
@@ -23,13 +24,15 @@ router = APIRouter(prefix="/applications", tags=["applications"])
 
 
 def _application_to_read(app: Application) -> ApplicationRead:
-    """Convert an Application model instance to an ApplicationRead schema."""
+    """Convert an Application model instance to an ApplicationRead schema, including Opportunity details."""
     interview_dates = None
     if app.interview_dates:
         try:
             interview_dates = json.loads(app.interview_dates)
         except (json.JSONDecodeError, TypeError):
             interview_dates = None
+
+    opp_read = _opportunity_to_read(app.opportunity) if app.opportunity else None
 
     return ApplicationRead(
         id=app.id,
@@ -42,6 +45,7 @@ def _application_to_read(app: Application) -> ApplicationRead:
         salary_offered=app.salary_offered,
         rejected_reason=app.rejected_reason,
         source_application_url=app.source_application_url,
+        opportunity=opp_read,
         created_at=app.created_at,
         updated_at=app.updated_at,
     )

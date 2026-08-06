@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import re
 from dataclasses import dataclass, field
 from app.ml.skill_extractor import extract_skills

@@ -1,26 +1,40 @@
 import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { FileText, Upload, Trash2, Sparkles, CheckCircle2, AlertCircle, Code, GraduationCap, Briefcase } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { FileText, Upload, Trash2, Sparkles, CheckCircle2, AlertCircle, Code, LogIn, Zap } from "lucide-react";
 import { resumesApi, Resume } from "../api/resumes";
+import { useAuthStore } from "../store/useAuthStore";
+import { authApi } from "../api/auth";
 
 function ResumesPage() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
+  const { isAuthenticated, setAuth } = useAuthStore();
+
   const [title, setTitle] = useState("");
   const [rawText, setRawText] = useState("");
   const [activeResume, setActiveResume] = useState<Resume | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [demoLoading, setDemoLoading] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["resumes"],
     queryFn: () => resumesApi.getResumes(),
+    enabled: isAuthenticated,
   });
 
   const createMutation = useMutation({
     mutationFn: (data: { title: string; raw_text: string }) => resumesApi.createResume(data),
     onSuccess: (newResume) => {
       queryClient.invalidateQueries({ queryKey: ["resumes"] });
+      queryClient.invalidateQueries({ queryKey: ["jobMatches"] });
       setTitle("");
       setRawText("");
       setActiveResume(newResume);
+      setErrorMsg(null);
+    },
+    onError: (err: any) => {
+      setErrorMsg(err.response?.data?.detail || "Failed to parse resume. Please make sure you are signed in.");
     },
   });
 
@@ -32,9 +46,42 @@ function ResumesPage() {
     },
   });
 
+  const handleQuickDemoLogin = async () => {
+    setDemoLoading(true);
+    try {
+      // Auto-register/login demo user
+      const demoEmail = `demo_${Date.now()}@jobiq.com`;
+      const res = await authApi.register(demoEmail, "password123", "Demo Engineer");
+      setAuth(res.access_token);
+      const userObj = await authApi.getMe();
+      setAuth(res.access_token, userObj);
+      setErrorMsg(null);
+    } catch {
+      // If demo email exists, login
+      try {
+        const res = await authApi.login("demo@jobiq.com", "password123");
+        setAuth(res.access_token);
+        const userObj = await authApi.getMe();
+        setAuth(res.access_token, userObj);
+        setErrorMsg(null);
+      } catch (err: any) {
+        setErrorMsg("Could not log in demo user automatically. Please sign up.");
+      }
+    } finally {
+      setDemoLoading(false);
+    }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg(null);
     if (!title || !rawText) return;
+
+    if (!isAuthenticated) {
+      setErrorMsg("Please sign in or click 'Quick Demo Account' below to parse & save your resume.");
+      return;
+    }
+
     createMutation.mutate({ title, raw_text: rawText });
   };
 
@@ -47,9 +94,47 @@ function ResumesPage() {
           Resume Parser & Profile Matching
         </h1>
         <p className="text-sm text-slate-400 mt-1">
-          Upload your resume to automatically extract tech skills, work experience, and generate daily ML job match scores.
+          Upload your resume text to extract tech skills, work experience, and generate daily ML job match scores.
         </p>
       </div>
+
+      {/* Unauthenticated Alert Banner */}
+      {!isAuthenticated && (
+        <div className="bg-gradient-to-r from-indigo-900/60 to-purple-900/40 border border-indigo-500/30 p-6 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-4 shadow-xl">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-300 flex items-center justify-center shrink-0">
+              <Zap className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-base font-bold text-white">Authentication Required to Save Resumes</h3>
+              <p className="text-xs text-slate-300">Sign in to save your parsed skills and generate AI job match recommendations.</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleQuickDemoLogin}
+              disabled={demoLoading}
+              className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs shadow-md shadow-indigo-600/30 transition-all flex items-center gap-1.5"
+            >
+              {demoLoading ? (
+                <div className="w-4 h-4 border-2 border-white/20 border-t-white rounded-full animate-spin" />
+              ) : (
+                <>
+                  <Zap className="w-3.5 h-3.5" />
+                  <span>Quick Demo Account</span>
+                </>
+              )}
+            </button>
+            <Link
+              to="/login"
+              className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs border border-slate-700 transition-colors"
+            >
+              Sign In
+            </Link>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Left Column: Submit New Resume */}
@@ -59,6 +144,13 @@ function ResumesPage() {
             Upload / Paste Resume Text
           </h2>
 
+          {errorMsg && (
+            <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-300 text-xs flex items-start gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs font-semibold text-slate-300 uppercase mb-2">Resume Title</label>
@@ -67,7 +159,7 @@ function ResumesPage() {
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Full-Stack Developer Resume 2026"
+                placeholder="e.g. AI Engineer & Python Resume 2026"
                 className="w-full px-4 py-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-100 text-sm focus:outline-none focus:border-indigo-500"
               />
             </div>
@@ -80,7 +172,7 @@ function ResumesPage() {
                 value={rawText}
                 onChange={(e) => setRawText(e.target.value)}
                 placeholder="Paste the full text of your resume here (Includes work experience, education, technologies, and projects)..."
-                className="w-full p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 font-mono"
+                className="w-full p-4 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500 font-mono leading-relaxed"
               />
             </div>
 
@@ -93,7 +185,7 @@ function ResumesPage() {
                 <div className="w-5 h-5 border-2 border-white/20 border-t-white rounded-full animate-spin" />
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4" />
+                  <Sparkles className="w-4 h-4 text-purple-300" />
                   <span>Parse Resume & Extract Skills</span>
                 </>
               )}
@@ -143,7 +235,7 @@ function ResumesPage() {
                   {/* Extracted Skills Preview */}
                   {res.skills && res.skills.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 pt-3">
-                      {res.skills.slice(0, 8).map((sk, idx) => (
+                      {res.skills.map((sk, idx) => (
                         <span
                           key={idx}
                           className="px-2 py-0.5 rounded-md bg-slate-950 text-indigo-300 text-[10px] border border-indigo-500/20 font-semibold"
@@ -151,9 +243,6 @@ function ResumesPage() {
                           {sk}
                         </span>
                       ))}
-                      {res.skills.length > 8 && (
-                        <span className="text-[10px] text-slate-500 self-center">+{res.skills.length - 8} more</span>
-                      )}
                     </div>
                   )}
                 </div>
@@ -161,7 +250,7 @@ function ResumesPage() {
             </div>
           ) : (
             <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-8 text-center text-slate-400 text-xs">
-              No resumes uploaded yet. Upload your resume text on the left to extract tech skills.
+              No resumes saved yet. Sign in and paste your resume text on the left to extract tech skills.
             </div>
           )}
 
@@ -171,7 +260,7 @@ function ResumesPage() {
               <div className="flex items-center justify-between border-b border-slate-800 pb-3">
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
                   <Code className="w-4 h-4 text-purple-400" />
-                  Extracted Entities & Taxonomy
+                  Extracted Tech Stack & Taxonomy
                 </h3>
                 <span className="text-xs font-semibold px-2.5 py-0.5 rounded bg-purple-500/20 text-purple-300">
                   {activeResume.skills?.length || 0} Skills Detected
@@ -180,7 +269,7 @@ function ResumesPage() {
 
               {activeResume.skills && activeResume.skills.length > 0 && (
                 <div>
-                  <h4 className="text-xs font-semibold text-slate-400 uppercase mb-2">Detected Tech Stack</h4>
+                  <h4 className="text-xs font-semibold text-slate-400 uppercase mb-2">Detected Technologies</h4>
                   <div className="flex flex-wrap gap-1.5">
                     {activeResume.skills.map((s, idx) => (
                       <span

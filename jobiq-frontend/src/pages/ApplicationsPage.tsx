@@ -2,16 +2,14 @@ import React, { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   KanbanSquare,
-  Plus,
   Trash2,
   Calendar,
   DollarSign,
   Edit3,
-  CheckCircle,
-  Clock,
-  XCircle,
-  FileText,
   Building2,
+  MapPin,
+  Globe,
+  ExternalLink,
 } from "lucide-react";
 import { applicationsApi, Application } from "../api/applications";
 
@@ -112,18 +110,19 @@ function ApplicationsPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-44 bg-slate-900/50 rounded-2xl animate-pulse border border-slate-800" />
+            <div key={i} className="h-52 bg-slate-900/50 rounded-2xl animate-pulse border border-slate-800" />
           ))}
         </div>
       ) : data?.items && data.items.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {data.items.map((app) => {
             const currentStatusObj = STATUSES.find((s) => s.id === app.status) || STATUSES[0];
+            const opp = app.opportunity;
 
             return (
               <div
                 key={app.id}
-                className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between space-y-4 shadow-xl hover:border-slate-700 transition-all"
+                className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between space-y-4 shadow-xl hover:border-slate-700 transition-all group"
               >
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
@@ -142,35 +141,53 @@ function ApplicationsPage() {
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-bold text-white">Application #{app.id}</h3>
-                    <p className="text-xs text-slate-400 flex items-center gap-1.5 mt-1">
+                    <h3 className="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors">
+                      {opp?.title || `Application #${app.id}`}
+                    </h3>
+                    <p className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 mt-1">
                       <Building2 className="w-3.5 h-3.5 text-slate-500" />
-                      Opportunity ID: #{app.opportunity_id}
+                      {opp?.company || `Opportunity #${app.opportunity_id}`}
                     </p>
                   </div>
 
-                  <div className="space-y-1 text-xs text-slate-400 pt-1">
+                  <div className="space-y-1.5 text-xs text-slate-400 pt-1">
+                    {opp?.location && (
+                      <p className="flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                        {opp.location}
+                      </p>
+                    )}
+
+                    {(opp?.salary_min || opp?.salary_max) && (
+                      <p className="flex items-center gap-1 text-emerald-400 font-semibold">
+                        <DollarSign className="w-3.5 h-3.5" />
+                        ${opp.salary_min?.toLocaleString()} - ${opp.salary_max?.toLocaleString()}
+                      </p>
+                    )}
+
                     {app.applied_date && (
                       <p className="flex items-center gap-1.5">
                         <Calendar className="w-3.5 h-3.5 text-indigo-400" />
                         Applied: {new Date(app.applied_date).toLocaleDateString()}
                       </p>
                     )}
+
                     {app.salary_offered && (
                       <p className="flex items-center gap-1.5 text-emerald-400 font-semibold">
                         <DollarSign className="w-3.5 h-3.5" />
                         Offered: ${app.salary_offered.toLocaleString()}
                       </p>
                     )}
+
                     {app.notes && (
-                      <p className="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 text-slate-300 italic text-[11px] line-clamp-3">
+                      <p className="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 text-slate-300 italic text-[11px] line-clamp-3 mt-2">
                         "{app.notes}"
                       </p>
                     )}
                   </div>
                 </div>
 
-                {/* Pipeline Controls & Edit Modal Trigger */}
+                {/* Pipeline Controls & Link */}
                 <div className="pt-4 border-t border-slate-800/80 flex flex-col gap-3">
                   <div className="flex items-center justify-between text-xs">
                     <span className="text-slate-500 font-semibold">Move Stage:</span>
@@ -187,17 +204,31 @@ function ApplicationsPage() {
                     </select>
                   </div>
 
-                  <button
-                    onClick={() => {
-                      setEditingApp(app);
-                      setNotes(app.notes || "");
-                      setSalaryOffered(app.salary_offered || "");
-                    }}
-                    className="w-full py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>Edit Notes & Details</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {opp?.source_url && (
+                      <a
+                        href={opp.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="p-2 rounded-xl text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 border border-slate-800 transition-colors"
+                        title="View Original Live Job Listing"
+                      >
+                        <Globe className="w-4 h-4" />
+                      </a>
+                    )}
+
+                    <button
+                      onClick={() => {
+                        setEditingApp(app);
+                        setNotes(app.notes || "");
+                        setSalaryOffered(app.salary_offered || "");
+                      }}
+                      className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                      <span>Edit Notes & Details</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -217,7 +248,9 @@ function ApplicationsPage() {
       {editingApp && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
           <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 className="text-lg font-bold text-white">Edit Application #{editingApp.id}</h3>
+            <h3 className="text-lg font-bold text-white">
+              Edit Notes for {editingApp.opportunity?.title || `Application #${editingApp.id}`}
+            </h3>
 
             <form onSubmit={handleSaveNotes} className="space-y-4">
               <div>

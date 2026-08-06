@@ -1,10 +1,12 @@
 import { apiClient } from './client';
+import { Opportunity } from './opportunities';
 
 export interface SavedOpportunity {
   id: number;
   user_id: number;
   opportunity_id: number;
   saved_at: string;
+  opportunity?: Opportunity | null;
 }
 
 export interface SavedOpportunityListResponse {
