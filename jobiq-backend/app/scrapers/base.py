@@ -1,9 +1,11 @@
 from __future__ import annotations
-
+import time
+import logging
 from collections.abc import Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
+logger = logging.getLogger(__name__)
 
 @dataclass
 class ScrapedOpportunity:
@@ -12,9 +14,35 @@ class ScrapedOpportunity:
     location: Optional[str] = None
     source_url: Optional[str] = None
     description: Optional[str] = None
-
+    salary_min: Optional[int] = None
+    salary_max: Optional[int] = None
+    required_skills: list[str] = field(default_factory=list)
+    job_level: Optional[str] = None
+    employment_type: Optional[str] = None
+    remote: bool = False
+    source: Optional[str] = None
+    company_logo_url: Optional[str] = None
+    type: str = "job"  # job, internship, hackathon, competition
+    stipend: Optional[int] = None
+    prize_pool: Optional[int] = None
+    duration_weeks: Optional[int] = None
 
 class BaseScraper:
+    """Base class for all job scrapers."""
+    source_name: str = "unknown"
+    rate_limit_seconds: float = 2.0
+
     def fetch_opportunities(self, limit: int = 20) -> Sequence[ScrapedOpportunity]:
-        # TODO: implement provider-specific scrapers.
-        return []
+        raise NotImplementedError
+
+    def _rate_limit(self) -> None:
+        time.sleep(self.rate_limit_seconds)
+
+    def _safe_int(self, value: str | None) -> int | None:
+        if not value:
+            return None
+        try:
+            cleaned = ''.join(c for c in str(value) if c.isdigit())
+            return int(cleaned) if cleaned else None
+        except (ValueError, TypeError):
+            return None
