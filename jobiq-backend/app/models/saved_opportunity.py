@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, func
+from sqlalchemy import DateTime, ForeignKey, func, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -18,6 +18,9 @@ class SavedOpportunity(Base):
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
 
+    __table_args__ = (
+        UniqueConstraint('user_id', 'opportunity_id', name='uq_saved_user_opportunity'),
+    )
+
     user = relationship("User", back_populates="saved_opportunities")
     opportunity = relationship("Opportunity", back_populates="saved_by_users")
-
