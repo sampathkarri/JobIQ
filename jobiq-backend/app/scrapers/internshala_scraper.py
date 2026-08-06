@@ -1,58 +1,83 @@
-import httpx
+from __future__ import annotations
+
 import logging
 from bs4 import BeautifulSoup
+import httpx
+
 from app.scrapers.base import BaseScraper, ScrapedOpportunity
 
 logger = logging.getLogger(__name__)
 
+
 class InternshalaScraper(BaseScraper):
     source_name = "internshala"
     base_url = "https://internshala.com"
-    target_url = "https://internshala.com/internships/internship-in-india"
+    target_url = "https://internshala.com/internships/computer-science-internship/"
 
-    def fetch_opportunities(self, limit: int = 20) -> list[ScrapedOpportunity]:
-        opportunities = []
+    def fetch_opportunities(self, limit: int = 30) -> list[ScrapedOpportunity]:
+        opportunities: list[ScrapedOpportunity] = []
+        headers = {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+            "Accept-Language": "en-US,en;q=0.9",
+        }
+
         try:
-            with httpx.Client(timeout=20.0) as client:
-                response = client.get(self.target_url, headers={"User-Agent": "Mozilla/5.0"})
+            with httpx.Client(timeout=25.0, follow_redirects=True) as client:
+                response = client.get(self.target_url, headers=headers)
                 response.raise_for_status()
-                soup = BeautifulSoup(response.text, 'html.parser')
-                
-                cards = soup.find_all("div", class_="internship_meta")
+
+                soup = BeautifulSoup(response.text, "html.parser")
+                cards = soup.find_all("div", class_="individual_internship")
+
                 for card in cards[:limit]:
                     try:
-                        title_elem = card.find("h3", class_="job-internship-name")
-                        title = title_elem.text.strip() if title_elem else "Unknown Title"
-                        
-                        company_elem = card.find("p", class_="company-name")
+                        title_elem = card.find(class_="job-title-href")
+                        title = title_elem.text.strip() if title_elem else ""
+                        if not title:
+                            continue
+
+                        company_elem = card.find(class_="company-name") or card.find(class_="company_name")
                         company = company_elem.text.strip() if company_elem else "Unknown Company"
-                        
-                        location_elem = card.find("a", class_="location_link")
-                        location = location_elem.text.strip() if location_elem else None
-                        
-                        link_elem = title_elem.find("a") if title_elem else None
-                        link = self.base_url + link_elem["href"] if link_elem and "href" in link_elem.attrs else None
-                        
-                        stipend_elem = card.find("span", class_="stipend")
+
+                        loc_elem = card.find(class_="locations")
+                        location = loc_elem.text.strip() if loc_elem else "India"
+
+                        href = card.get("data-href") or (title_elem.get("href") if title_elem else "")
+                        link = self.base_url + href if href and not href.startswith("http") else href
+
+                        stipend_elem = card.find(class_="stipend")
                         stipend_str = stipend_elem.text.strip() if stipend_elem else None
                         stipend = self._safe_int(stipend_str)
-                        
-                        opportunities.append(ScrapedOpportunity(
-                            title=title,
-                            company=company,
-                            location=location,
-                            source_url=link,
-                            source=self.source_name,
-                            type="internship",
-                            stipend=stipend,
-                            remote=bool(location and "Work From Home" in location)
-                        ))
+
+                        # Extract tagged skills
+                        skills = []
+                        skill_elems = card.find_all(class_="job_skill")
+                        for s in skill_elems:
+                            skills.append(s.text.strip())
+
+                        is_remote = "Work From Home" in location or "Remote" in location
+
+                        opportunities.append(
+                            ScrapedOpportunity(
+                                title=title,
+                                company=company,
+                                location=location,
+                                source_url=link,
+                                source=self.source_name,
+                                type="internship",
+                                stipend=stipend,
+                                remote=is_remote,
+                                required_skills=skills,
+                                description=f"Internship opportunity at {company} ({location}). Stipend: {stipend_str or 'Disclosed upon application'}.",
+                            )
+                        )
                     except Exception as e:
                         logger.warning(f"Error parsing Internshala card: {e}")
                         continue
-                        
+
                 self._rate_limit()
         except Exception as exc:
             logger.error(f"Internshala scraping error: {exc}")
-            
+
         return opportunities

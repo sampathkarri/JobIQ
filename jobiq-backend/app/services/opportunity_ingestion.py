@@ -65,8 +65,9 @@ def ingest_all_sources(db: Session) -> dict:
     from app.scrapers.github_scraper import ArbeitNowScraper
     from app.scrapers.internshala_scraper import InternshalaScraper
     from app.scrapers.unstop_scraper import UnstopScraper
-    
-    scrapers = [ArbeitNowScraper(), InternshalaScraper(), UnstopScraper()]
+    from app.scrapers.india_jobs_scraper import IndiaJobsScraper
+
+    scrapers = [IndiaJobsScraper(), InternshalaScraper(), ArbeitNowScraper(), UnstopScraper()]
     try:
         from app.scrapers.remotive import RemotiveScraper
         scrapers.append(RemotiveScraper())
