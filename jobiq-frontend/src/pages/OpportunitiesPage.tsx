@@ -36,6 +36,7 @@ function OpportunitiesPage() {
   const [minSalary, setMinSalary] = useState<number | undefined>(undefined);
   const [skillsFilter, setSkillsFilter] = useState("");
   const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(12);
   const [showFilters, setShowFilters] = useState(false);
 
   // Status Feedback
@@ -53,6 +54,7 @@ function OpportunitiesPage() {
       minSalary,
       skillsFilter,
       page,
+      perPage,
     ],
     queryFn: () =>
       opportunitiesApi.getOpportunities({
@@ -64,7 +66,7 @@ function OpportunitiesPage() {
         salary_min: minSalary,
         skills: skillsFilter || undefined,
         page,
-        per_page: 12,
+        per_page: perPage,
       }),
   });
 
@@ -261,10 +263,28 @@ function OpportunitiesPage() {
       )}
 
       {/* Results Meta */}
-      <div className="flex justify-between items-center text-xs text-slate-400 px-1">
-        <span>
-          Showing {data?.items?.length || 0} of {data?.total || 0} opportunities
-        </span>
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400 px-1">
+        <div className="flex items-center gap-3">
+          <span>
+            Showing {data?.items?.length || 0} of {data?.total || 0} opportunities
+          </span>
+          <div className="flex items-center gap-1.5 bg-slate-900 border border-slate-800 px-2.5 py-1 rounded-xl">
+            <span className="text-[11px] text-slate-500 font-semibold">Per Page:</span>
+            <select
+              value={perPage}
+              onChange={(e) => {
+                setPerPage(Number(e.target.value));
+                setPage(1);
+              }}
+              className="bg-transparent text-slate-200 text-xs font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value={12} className="bg-slate-900">12</option>
+              <option value={24} className="bg-slate-900">24</option>
+              <option value={48} className="bg-slate-900">48</option>
+              <option value={100} className="bg-slate-900">100</option>
+            </select>
+          </div>
+        </div>
         {isFetching && <span className="text-indigo-400 animate-pulse">Updating results...</span>}
       </div>
 
