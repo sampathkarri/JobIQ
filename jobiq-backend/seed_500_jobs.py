@@ -9,7 +9,6 @@ from app.models.opportunity import Opportunity
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Curated high-demand Indian software engineering job templates
 ROLE_TITLES = [
     "Full Stack Software Engineer (React + Python/Node)",
     "Backend Developer (Go / Microservices)",
@@ -34,7 +33,7 @@ ROLE_TITLES = [
 ]
 
 COMPANIES = [
-    "Flipkart", "Swiggy", "Zomato", "PhonePe", "Razorpay", "Meesho", "CRED",
+    "Razorpay", "Swiggy", "Zomato", "PhonePe", "Flipkart", "Meesho", "CRED",
     "Amazon India", "Microsoft India", "Google India", "Salesforce India",
     "Uber India", "Ola Cabs", "Acko General Insurance", "Paytm", "Zerodha",
     "Groww", "Postman", "BrowserStack", "Freshworks", "Zoho Corporation",
@@ -105,14 +104,9 @@ def seed_500():
         sal_max = sal_min + 1200000
 
         source_name = "naukri" if idx % 3 == 0 else "linkedin" if idx % 3 == 1 else "india_jobs"
-        
-        query_str = quote(f"{company} {role_base} jobs India")
-        if source_name == "linkedin":
-            source_url = f"https://www.linkedin.com/jobs/search/?keywords={quote(role_base)}&location=India"
-        elif source_name == "naukri":
-            source_url = f"https://www.naukri.com/software-engineer-jobs-in-india?k={quote(role_base)}"
-        else:
-            source_url = f"https://www.google.com/search?q={query_str}"
+        search_query = f"{company_base} {role_base}"
+
+        source_url = f"https://www.linkedin.com/jobs/search/?keywords={quote(search_query)}&location=India&ref_id={opp_num}"
 
         opp = Opportunity(
             title=title,
