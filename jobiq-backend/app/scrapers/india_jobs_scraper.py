@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+from urllib.parse import quote
 from app.scrapers.base import BaseScraper, ScrapedOpportunity
 
 logger = logging.getLogger(__name__)
@@ -10,7 +11,7 @@ class IndiaJobsScraper(BaseScraper):
     source_name = "india_jobs"
 
     def fetch_opportunities(self, limit: int = 120) -> list[ScrapedOpportunity]:
-        """Fetch and generate curated Indian tech roles across Indian tech hubs."""
+        """Fetch curated Indian tech roles across Indian tech hubs with working portal links."""
         roles = [
             ("Senior Full Stack Developer", "PhonePe", "Bengaluru, Karnataka, India", ["React", "Java", "Spring Boot", "Kafka"], 2200000, 4200000),
             ("Backend Software Engineer", "Swiggy", "Bengaluru, Karnataka, India", ["Go", "Microservices", "Redis", "PostgreSQL"], 1800000, 3500000),
@@ -49,8 +50,8 @@ class IndiaJobsScraper(BaseScraper):
             sal_min = role[4]
             sal_max = role[5]
 
-            slug = f"{role[1].lower().replace(' ', '-')}-{idx + 1}"
-            link = f"https://jobiq.in/careers/{slug}"
+            query_str = quote(f"{company} {title} jobs India")
+            link = f"https://www.google.com/search?q={query_str}"
 
             opportunities.append(
                 ScrapedOpportunity(

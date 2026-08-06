@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+from urllib.parse import quote
 from app.core.database import SessionLocal
 from app.models.opportunity import Opportunity
 
@@ -104,7 +105,14 @@ def seed_500():
         sal_max = sal_min + 1200000
 
         source_name = "naukri" if idx % 3 == 0 else "linkedin" if idx % 3 == 1 else "india_jobs"
-        source_url = f"https://www.jobiq.in/opportunity/opp-{opp_num}"
+        
+        query_str = quote(f"{company} {role_base} jobs India")
+        if source_name == "linkedin":
+            source_url = f"https://www.linkedin.com/jobs/search/?keywords={quote(role_base)}&location=India"
+        elif source_name == "naukri":
+            source_url = f"https://www.naukri.com/software-engineer-jobs-in-india?k={quote(role_base)}"
+        else:
+            source_url = f"https://www.google.com/search?q={query_str}"
 
         opp = Opportunity(
             title=title,
