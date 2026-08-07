@@ -64,8 +64,8 @@ export const opportunitiesApi = {
     return response.data;
   },
 
-  ingestRemotive: async (): Promise<{ fetched: number; created: number; updated: number }> => {
-    const response = await apiClient.post('/opportunities/ingest/remotive');
+  triggerScrape: async (): Promise<{ message: string; task_id?: string; result?: any }> => {
+    const response = await apiClient.post('/admin/scrape');
     return response.data;
   },
 };

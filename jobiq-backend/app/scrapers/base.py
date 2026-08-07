@@ -42,7 +42,10 @@ class BaseScraper:
         if not value:
             return None
         try:
-            cleaned = ''.join(c for c in str(value) if c.isdigit())
-            return int(cleaned) if cleaned else None
+            import re
+            match = re.search(r'\b\d+(?:,\d+)*\b', str(value))
+            if match:
+                return int(match.group(0).replace(',', ''))
+            return None
         except (ValueError, TypeError):
             return None

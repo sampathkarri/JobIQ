@@ -81,8 +81,7 @@ function SavedOpportunitiesPage() {
 
                     {(opp?.salary_min || opp?.salary_max) && (
                       <p className="flex items-center gap-1 text-emerald-400 font-semibold">
-                        <DollarSign className="w-3.5 h-3.5" />
-                        ${opp.salary_min?.toLocaleString()} - ${opp.salary_max?.toLocaleString()}
+                        ₹{opp.salary_min?.toLocaleString()} - ₹{opp.salary_max?.toLocaleString()}
                       </p>
                     )}
 

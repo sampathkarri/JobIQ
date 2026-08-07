@@ -101,10 +101,10 @@ function OpportunitiesPage() {
 
   // Scraper Trigger Mutation
   const ingestMutation = useMutation({
-    mutationFn: () => opportunitiesApi.ingestRemotive(),
+    mutationFn: () => opportunitiesApi.triggerScrape(),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ["opportunities"] });
-      showToast(`Scraped & Ingested ${data.created} new jobs!`);
+      showToast(`Scraping triggered successfully!`);
     },
     onError: () => {
       showToast("Scraper run completed or already up to date.");
@@ -354,17 +354,18 @@ function OpportunitiesPage() {
 
                   {(opp.salary_min || opp.salary_max) && (
                     <span className="flex items-center gap-1 text-emerald-400 font-semibold">
-                      <DollarSign className="w-3.5 h-3.5" />
-                      ${opp.salary_min?.toLocaleString()} - ${opp.salary_max?.toLocaleString()}
+                      <span className="text-slate-300">
+                        ₹{opp.salary_min?.toLocaleString()} - ₹{opp.salary_max?.toLocaleString()}
+                      </span>
                     </span>
                   )}
 
                   {opp.stipend && (
-                    <span className="text-emerald-400 font-semibold">Stipend: ${opp.stipend.toLocaleString()}/mo</span>
+                    <span className="text-emerald-400 font-semibold">Stipend: ₹{opp.stipend.toLocaleString()}/mo</span>
                   )}
 
                   {opp.prize_pool && (
-                    <span className="text-amber-400 font-semibold">Prize: ${opp.prize_pool.toLocaleString()}</span>
+                    <span className="text-amber-400 font-semibold">Prize: ₹{opp.prize_pool.toLocaleString()}</span>
                   )}
                 </div>
 

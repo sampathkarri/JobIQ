@@ -35,12 +35,7 @@ def scrape_single_source(source_name: str):
             "unstop": UnstopScraper
         }
         
-        try:
-            from app.scrapers.remotive import RemotiveScraper
-            scrapers["remotive"] = RemotiveScraper
-        except ImportError:
-            pass
-            
+
         if source_name not in scrapers:
             return {"error": f"Scraper {source_name} not found"}
             

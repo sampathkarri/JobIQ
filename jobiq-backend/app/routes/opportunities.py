@@ -415,17 +415,4 @@ def create_opportunity(payload: OpportunityCreate, db: Session = Depends(get_db)
     return _opportunity_to_read(row)
 
 
-@router.post("/ingest/remotive", response_model=OpportunityIngestResponse)
-def ingest_opportunities_from_remotive(
-    limit: int = Query(default=20, ge=1, le=100),
-    db: Session = Depends(get_db),
-):
-    """Trigger ingestion of jobs from the Remotive API."""
-    from app.scrapers.remotive import RemotiveScraper
 
-    try:
-        scraper = RemotiveScraper()
-        result = ingest_opportunities(db, scraper)
-    except Exception as exc:
-        raise HTTPException(status_code=502, detail=str(exc)) from exc
-    return OpportunityIngestResponse(**result)

@@ -29,8 +29,6 @@ const navItems = [
   { to: "/applications", label: "Pipeline", icon: KanbanSquare },
   { to: "/resumes", label: "Resumes", icon: FileText },
   { to: "/job-matches", label: "AI Matches", icon: Sparkles },
-  { to: "/saved-opportunities", label: "Saved", icon: Bookmark },
-  { to: "/analytics", label: "Market Insights", icon: BarChart3 },
   { to: "/interview-prep", label: "Interview Prep", icon: Mic },
 ];
 
