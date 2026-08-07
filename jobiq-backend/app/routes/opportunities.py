@@ -23,10 +23,13 @@ def _opportunity_to_read(opp: Opportunity) -> OpportunityRead:
     """Convert an Opportunity model instance to an OpportunityRead schema."""
     required_skills = None
     if opp.required_skills:
-        try:
-            required_skills = json.loads(opp.required_skills)
-        except (json.JSONDecodeError, TypeError):
-            required_skills = None
+        if isinstance(opp.required_skills, list):
+            required_skills = opp.required_skills
+        elif isinstance(opp.required_skills, str):
+            try:
+                required_skills = json.loads(opp.required_skills)
+            except Exception:
+                required_skills = None
 
     return OpportunityRead(
         id=opp.id,
