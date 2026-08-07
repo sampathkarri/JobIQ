@@ -76,19 +76,23 @@ def ingest_opportunities(db: Session, scraper: BaseScraper) -> dict:
 
 def ingest_all_sources(db: Session) -> dict:
     from app.scrapers.linkedin_scraper import LinkedInScraper
-    from app.scrapers.unstop_scraper import UnstopScraper
-    from app.scrapers.naukri_scraper import NaukriScraper
-    from app.scrapers.internshala_scraper import InternshalaScraper
-    from app.scrapers.india_jobs_scraper import IndiaJobsScraper
+    from app.scrapers.indeed_scraper import IndeedScraper
+    from app.scrapers.angellist_scraper import AngelListScraper
     from app.scrapers.github_scraper import ArbeitNowScraper
+    from app.scrapers.unstop_scraper import UnstopScraper
+    from app.scrapers.internshala_scraper import InternshalaScraper
+    from app.scrapers.naukri_scraper import NaukriScraper
+    from app.scrapers.india_jobs_scraper import IndiaJobsScraper
 
     scrapers = [
         LinkedInScraper(),
-        UnstopScraper(),
-        NaukriScraper(),
-        InternshalaScraper(),
-        IndiaJobsScraper(),
+        IndeedScraper(),
+        AngelListScraper(),
         ArbeitNowScraper(),
+        UnstopScraper(),
+        InternshalaScraper(),
+        NaukriScraper(),
+        IndiaJobsScraper(),
     ]
 
     try:

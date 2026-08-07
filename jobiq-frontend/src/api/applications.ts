@@ -62,4 +62,9 @@ export const applicationsApi = {
     const response = await apiClient.delete(`/applications/${id}`);
     return response.data;
   },
+
+  generateEmail: async (data: { opportunity_id: number; email_type?: string; custom_notes?: string }): Promise<{ subject: string; body: string; email_type: string }> => {
+    const response = await apiClient.post('/applications/generate-email', data);
+    return response.data;
+  },
 };

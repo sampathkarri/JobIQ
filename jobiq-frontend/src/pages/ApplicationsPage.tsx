@@ -9,7 +9,11 @@ import {
   Building2,
   MapPin,
   Globe,
-  ExternalLink,
+  Mail,
+  Copy,
+  Check,
+  X,
+  Sparkles,
 } from "lucide-react";
 import { applicationsApi, Application } from "../api/applications";
 
@@ -27,6 +31,12 @@ function ApplicationsPage() {
   const [editingApp, setEditingApp] = useState<Application | null>(null);
   const [notes, setNotes] = useState("");
   const [salaryOffered, setSalaryOffered] = useState<number | "">("");
+
+  // AI Email Modal State
+  const [emailModalApp, setEmailModalApp] = useState<Application | null>(null);
+  const [emailType, setEmailType] = useState("cover_letter");
+  const [generatedEmail, setGeneratedEmail] = useState<{ subject: string; body: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const { data, isLoading } = useQuery({
     queryKey: ["applications", selectedStatus],
@@ -48,6 +58,13 @@ function ApplicationsPage() {
     },
   });
 
+  const generateEmailMutation = useMutation({
+    mutationFn: (data: { opportunity_id: number; email_type: string }) => applicationsApi.generateEmail(data),
+    onSuccess: (res) => {
+      setGeneratedEmail(res);
+    },
+  });
+
   const handleStatusChange = (app: Application, newStatus: string) => {
     updateMutation.mutate({ id: app.id, data: { status: newStatus } });
   };
@@ -64,59 +81,75 @@ function ApplicationsPage() {
     });
   };
 
+  const handleOpenEmailModal = (app: Application) => {
+    setEmailModalApp(app);
+    setGeneratedEmail(null);
+    setCopied(false);
+    generateEmailMutation.mutate({
+      opportunity_id: app.opportunity_id,
+      email_type: "cover_letter",
+    });
+  };
+
+  const handleCopyEmail = () => {
+    if (!generatedEmail) return;
+    navigator.clipboard.writeText(`Subject: ${generatedEmail.subject}\n\n${generatedEmail.body}`);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
   return (
     <div className="space-y-6 pb-12">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-800 pb-6">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
-            <KanbanSquare className="w-7 h-7 text-indigo-400" />
-            Application Pipeline
-          </h1>
-          <p className="text-sm text-slate-400 mt-1">
-            Track your job applications across every stage from initial interest to offer acceptance.
-          </p>
-        </div>
-
-        {/* Filter Pills */}
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => setSelectedStatus(null)}
-            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
-              selectedStatus === null
-                ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
-                : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
-            }`}
-          >
-            All Stages ({data?.total || 0})
-          </button>
-          {STATUSES.map((st) => (
-            <button
-              key={st.id}
-              onClick={() => setSelectedStatus(st.id)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                selectedStatus === st.id
-                  ? `${st.color} shadow-md`
-                  : "bg-slate-900 border-slate-800 text-slate-400 hover:text-white"
-              }`}
-            >
-              {st.label}
-            </button>
-          ))}
-        </div>
+      <div className="border-b border-slate-800 pb-6">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+          <KanbanSquare className="w-7 h-7 text-indigo-400" />
+          Application Pipeline
+        </h1>
+        <p className="text-sm text-slate-400 mt-1">
+          Track, organize, and manage your job applications across every stage of the hiring funnel.
+        </p>
       </div>
 
-      {/* Applications Cards Grid */}
+      {/* Filter Tabs */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setSelectedStatus(null)}
+          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+            selectedStatus === null
+              ? "bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-500/20"
+              : "bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700"
+          }`}
+        >
+          All Applications ({data?.total || 0})
+        </button>
+
+        {STATUSES.map((st) => (
+          <button
+            key={st.id}
+            onClick={() => setSelectedStatus(st.id)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all border ${
+              selectedStatus === st.id
+                ? "bg-indigo-600 text-white border-indigo-500 shadow-lg shadow-indigo-500/20"
+                : "bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700"
+            }`}
+          >
+            {st.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Applications List */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
-            <div key={i} className="h-52 bg-slate-900/50 rounded-2xl animate-pulse border border-slate-800" />
+            <div key={i} className="h-48 bg-slate-900/50 rounded-2xl animate-pulse border border-slate-800" />
           ))}
         </div>
       ) : data?.items && data.items.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {data.items.map((app) => {
-            const currentStatusObj = STATUSES.find((s) => s.id === app.status) || STATUSES[0];
+            const currentStatus = STATUSES.find((s) => s.id === app.status) || STATUSES[0];
             const opp = app.opportunity;
 
             return (
@@ -127,26 +160,47 @@ function ApplicationsPage() {
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${currentStatusObj.color}`}
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${currentStatus.color}`}
                     >
-                      {currentStatusObj.label}
+                      {currentStatus.label}
                     </span>
-                    <button
-                      onClick={() => deleteMutation.mutate(app.id)}
-                      className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                      title="Delete Application"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => handleOpenEmailModal(app)}
+                        className="p-1.5 rounded-lg text-indigo-400 hover:bg-indigo-500/10 transition-colors"
+                        title="Generate AI Cover Letter / Email"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingApp(app);
+                          setNotes(app.notes || "");
+                          setSalaryOffered(app.salary_offered || "");
+                        }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                        title="Edit Notes & Details"
+                      >
+                        <Edit3 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => deleteMutation.mutate(app.id)}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                        title="Delete Application"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
 
                   <div>
-                    <h3 className="text-lg font-bold text-white group-hover:text-indigo-300 transition-colors">
-                      {opp?.title || `Application #${app.id}`}
+                    <h3 className="text-base font-bold text-white group-hover:text-indigo-400 transition-colors line-clamp-1">
+                      {opp?.title || `Opportunity #${app.opportunity_id}`}
                     </h3>
                     <p className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 mt-1">
                       <Building2 className="w-3.5 h-3.5 text-slate-500" />
-                      {opp?.company || `Opportunity #${app.opportunity_id}`}
+                      {opp?.company || `Company #${app.opportunity_id}`}
                     </p>
                   </div>
 
@@ -165,69 +219,45 @@ function ApplicationsPage() {
                       </p>
                     )}
 
-                    {app.applied_date && (
-                      <p className="flex items-center gap-1.5">
-                        <Calendar className="w-3.5 h-3.5 text-indigo-400" />
-                        Applied: {new Date(app.applied_date).toLocaleDateString()}
-                      </p>
-                    )}
-
-                    {app.salary_offered && (
-                      <p className="flex items-center gap-1.5 text-emerald-400 font-semibold">
-                        <DollarSign className="w-3.5 h-3.5" />
-                        Offered: ${app.salary_offered.toLocaleString()}
-                      </p>
-                    )}
-
-                    {app.notes && (
-                      <p className="p-2.5 rounded-xl bg-slate-950 border border-slate-800/80 text-slate-300 italic text-[11px] line-clamp-3 mt-2">
-                        "{app.notes}"
-                      </p>
-                    )}
+                    <p className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                      Applied: {app.applied_date ? new Date(app.applied_date).toLocaleDateString() : "Recently"}
+                    </p>
                   </div>
+
+                  {app.notes && (
+                    <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-300">
+                      <span className="font-semibold text-slate-500 block mb-0.5">Notes:</span>
+                      {app.notes}
+                    </div>
+                  )}
                 </div>
 
-                {/* Pipeline Controls & Link */}
-                <div className="pt-4 border-t border-slate-800/80 flex flex-col gap-3">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-500 font-semibold">Move Stage:</span>
+                <div className="pt-3 border-t border-slate-800/80 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
                     <select
                       value={app.status}
                       onChange={(e) => handleStatusChange(app, e.target.value)}
-                      className="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none"
+                      className="px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
                     >
                       {STATUSES.map((st) => (
                         <option key={st.id} value={st.id}>
-                          {st.label}
+                          Move to {st.label}
                         </option>
                       ))}
                     </select>
-                  </div>
 
-                  <div className="flex items-center gap-2">
                     {opp?.source_url && (
                       <a
                         href={opp.source_url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="p-2 rounded-xl text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 border border-slate-800 transition-colors"
-                        title="View Original Live Job Listing"
+                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-indigo-500/20 text-slate-300 hover:text-indigo-300 text-xs font-semibold border border-slate-700 transition-colors"
                       >
-                        <Globe className="w-4 h-4" />
+                        <Globe className="w-3.5 h-3.5" />
+                        <span>View Link</span>
                       </a>
                     )}
-
-                    <button
-                      onClick={() => {
-                        setEditingApp(app);
-                        setNotes(app.notes || "");
-                        setSalaryOffered(app.salary_offered || "");
-                      }}
-                      className="flex-1 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                      <span>Edit Notes & Details</span>
-                    </button>
                   </div>
                 </div>
               </div>
@@ -237,21 +267,95 @@ function ApplicationsPage() {
       ) : (
         <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-12 text-center space-y-4">
           <KanbanSquare className="w-12 h-12 text-slate-600 mx-auto" />
-          <h3 className="text-lg font-bold text-white">No applications in pipeline</h3>
+          <h3 className="text-lg font-bold text-white">No applications in this stage</h3>
           <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            Quickly apply to job opportunities to automatically populate your application pipeline tracking board.
+            Browse opportunities in the discovery engine and click "Quick Apply" to add them to your pipeline.
           </p>
         </div>
       )}
 
-      {/* Edit Modal */}
-      {editingApp && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
-          <div className="w-full max-w-md bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 className="text-lg font-bold text-white">
-              Edit Notes for {editingApp.opportunity?.title || `Application #${editingApp.id}`}
-            </h3>
+      {/* AI Email Generation Modal */}
+      {emailModalApp && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-indigo-400" />
+                AI Email Generator
+              </h3>
+              <button
+                onClick={() => setEmailModalApp(null)}
+                className="text-slate-500 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
 
+            <div className="flex gap-2">
+              {[
+                { id: "cover_letter", label: "Cover Letter" },
+                { id: "follow_up", label: "Follow-up Email" },
+                { id: "interview_thank_you", label: "Thank You Note" },
+              ].map((type) => (
+                <button
+                  key={type.id}
+                  onClick={() => {
+                    setEmailType(type.id);
+                    generateEmailMutation.mutate({
+                      opportunity_id: emailModalApp.opportunity_id,
+                      email_type: type.id,
+                    });
+                  }}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                    emailType === type.id
+                      ? "bg-indigo-600 text-white border-indigo-500"
+                      : "bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700"
+                  }`}
+                >
+                  {type.label}
+                </button>
+              ))}
+            </div>
+
+            {generateEmailMutation.isPending ? (
+              <div className="p-8 text-center text-xs text-indigo-400 animate-pulse">
+                Generating personalized AI email...
+              </div>
+            ) : generatedEmail ? (
+              <div className="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                <div>
+                  <span className="text-[11px] font-bold uppercase text-slate-500 block">Subject</span>
+                  <p className="text-xs font-semibold text-slate-200">{generatedEmail.subject}</p>
+                </div>
+                <div>
+                  <span className="text-[11px] font-bold uppercase text-slate-500 block mb-1">Message Body</span>
+                  <textarea
+                    readOnly
+                    rows={8}
+                    value={generatedEmail.body}
+                    className="w-full bg-slate-900 border border-slate-800 text-xs text-slate-300 p-3 rounded-lg focus:outline-none font-mono leading-relaxed"
+                  />
+                </div>
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={handleCopyEmail}
+                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors"
+                  >
+                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                    <span>{copied ? "Copied!" : "Copy to Clipboard"}</span>
+                  </button>
+                </div>
+              </div>
+            ) : null}
+          </div>
+        </div>
+      )}
+
+      {/* Edit Notes Modal */}
+      {editingApp && (
+        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <h3 className="text-lg font-bold text-white">Edit Application Details</h3>
             <form onSubmit={handleSaveNotes} className="space-y-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Notes</label>
@@ -259,8 +363,8 @@ function ApplicationsPage() {
                   rows={4}
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Record interview notes, recruiter contacts, or follow-up details..."
-                  className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
+                  placeholder="Interview notes, recruiter contact info, next steps..."
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -270,8 +374,8 @@ function ApplicationsPage() {
                   type="number"
                   value={salaryOffered}
                   onChange={(e) => setSalaryOffered(e.target.value ? Number(e.target.value) : "")}
-                  placeholder="e.g. 150000"
-                  className="w-full p-3 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
+                  placeholder="e.g. 140000"
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -279,13 +383,13 @@ function ApplicationsPage() {
                 <button
                   type="button"
                   onClick={() => setEditingApp(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-slate-200"
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold"
+                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors"
                 >
                   Save Changes
                 </button>

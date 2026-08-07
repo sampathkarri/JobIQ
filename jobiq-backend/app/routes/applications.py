@@ -20,7 +20,44 @@ from app.schemas.application import (
 )
 from app.utils.dependencies import get_current_active_user
 
+from pydantic import BaseModel
+from app.services.email_generator import generate_application_email
+
 router = APIRouter(prefix="/applications", tags=["applications"])
+
+
+class EmailGenerateRequest(BaseModel):
+    opportunity_id: int
+    email_type: str = "cover_letter"  # cover_letter | follow_up | interview_thank_you
+    custom_notes: str | None = None
+
+
+@router.post("/generate-email")
+def generate_email(
+    req: EmailGenerateRequest,
+    current_user: User = Depends(get_current_active_user),
+    db: Session = Depends(get_db),
+):
+    opp = db.query(Opportunity).filter(Opportunity.id == req.opportunity_id).first()
+    if not opp:
+        raise HTTPException(status_code=404, detail="Opportunity not found")
+
+    skills = []
+    if opp.required_skills:
+        try:
+            skills = json.loads(opp.required_skills)
+        except Exception:
+            skills = []
+
+    result = generate_application_email(
+        job_title=opp.title,
+        company=opp.company,
+        applicant_name=current_user.full_name or "JobIQ Candidate",
+        skills=skills,
+        email_type=req.email_type,
+        custom_notes=req.custom_notes,
+    )
+    return result
 
 
 def _application_to_read(app: Application) -> ApplicationRead:
