@@ -22,6 +22,7 @@ import { opportunitiesApi, Opportunity } from "../api/opportunities";
 import { applicationsApi } from "../api/applications";
 import { savedOpportunitiesApi } from "../api/savedOpportunities";
 import { useAuthStore } from "../store/useAuthStore";
+import { PasteJobModal } from "../components/PasteJobModal";
 
 function OpportunitiesPage() {
   const queryClient = useQueryClient();
@@ -41,6 +42,9 @@ function OpportunitiesPage() {
 
   // Status Feedback
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Paste Link Modal state
+  const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
 
   // Fetch Opportunities Query
   const { data, isLoading, isFetching, refetch } = useQuery({
@@ -145,14 +149,24 @@ function OpportunitiesPage() {
           </p>
         </div>
 
-        <button
-          onClick={() => ingestMutation.mutate()}
-          disabled={ingestMutation.isPending}
-          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700/80 font-semibold text-xs shadow-md transition-all self-start sm:self-auto disabled:opacity-50"
-        >
-          <RefreshCw className={`w-4 h-4 text-indigo-400 ${ingestMutation.isPending ? "animate-spin" : ""}`} />
-          <span>{ingestMutation.isPending ? "Scraping Live..." : "Fetch Live Jobs"}</span>
-        </button>
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <button
+            onClick={() => setIsPasteModalOpen(true)}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/25 transition-all transform hover:-translate-y-0.5"
+          >
+            <Sparkles className="w-4 h-4 text-amber-300" />
+            <span>+ Paste Job Link</span>
+          </button>
+
+          <button
+            onClick={() => ingestMutation.mutate()}
+            disabled={ingestMutation.isPending}
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700/80 font-semibold text-xs shadow-md transition-all disabled:opacity-50"
+          >
+            <RefreshCw className={`w-4 h-4 text-indigo-400 ${ingestMutation.isPending ? "animate-spin" : ""}`} />
+            <span>{ingestMutation.isPending ? "Scraping Live..." : "Fetch Live Jobs"}</span>
+          </button>
+        </div>
       </div>
 
       {/* Search Bar & Filter Toggle */}
@@ -452,6 +466,16 @@ function OpportunitiesPage() {
           </button>
         </div>
       )}
+
+      {/* Smart Link Parser Modal */}
+      <PasteJobModal
+        isOpen={isPasteModalOpen}
+        onClose={() => setIsPasteModalOpen(false)}
+        onJobSaved={() => {
+          showToast("Custom job added to your pipeline!");
+          queryClient.invalidateQueries({ queryKey: ["customJobs"] });
+        }}
+      />
     </div>
   );
 }

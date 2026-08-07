@@ -14,8 +14,13 @@ import {
   Check,
   X,
   Sparkles,
+  Link2,
+  Tag,
+  Plus,
 } from "lucide-react";
 import { applicationsApi, Application } from "../api/applications";
+import { customJobsApi, CustomJob } from "../api/customJobs";
+import { PasteJobModal } from "../components/PasteJobModal";
 
 const STATUSES = [
   { id: "interested", label: "Interested", color: "bg-slate-500/20 text-slate-300 border-slate-700" },
@@ -32,6 +37,9 @@ function ApplicationsPage() {
   const [notes, setNotes] = useState("");
   const [salaryOffered, setSalaryOffered] = useState<number | "">("");
 
+  // Paste Link Modal state
+  const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
+
   // AI Email Modal State
   const [emailModalApp, setEmailModalApp] = useState<Application | null>(null);
   const [emailType, setEmailType] = useState("cover_letter");
@@ -41,6 +49,11 @@ function ApplicationsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ["applications", selectedStatus],
     queryFn: () => applicationsApi.getApplications(selectedStatus || undefined),
+  });
+
+  const { data: customJobsData, isLoading: isCustomJobsLoading } = useQuery({
+    queryKey: ["customJobs", selectedStatus],
+    queryFn: () => customJobsApi.getCustomJobs(selectedStatus || undefined),
   });
 
   const updateMutation = useMutation({
@@ -58,6 +71,20 @@ function ApplicationsPage() {
     },
   });
 
+  const updateCustomJobMutation = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: any }) => customJobsApi.updateCustomJob(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customJobs"] });
+    },
+  });
+
+  const deleteCustomJobMutation = useMutation({
+    mutationFn: (id: number) => customJobsApi.deleteCustomJob(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["customJobs"] });
+    },
+  });
+
   const generateEmailMutation = useMutation({
     mutationFn: (data: { opportunity_id: number; email_type: string }) => applicationsApi.generateEmail(data),
     onSuccess: (res) => {
@@ -67,6 +94,10 @@ function ApplicationsPage() {
 
   const handleStatusChange = (app: Application, newStatus: string) => {
     updateMutation.mutate({ id: app.id, data: { status: newStatus } });
+  };
+
+  const handleCustomJobStatusChange = (jobId: number, newStatus: string) => {
+    updateCustomJobMutation.mutate({ id: jobId, data: { status: newStatus } });
   };
 
   const handleSaveNotes = (e: React.FormEvent) => {
@@ -98,17 +129,29 @@ function ApplicationsPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const totalItems = (data?.total || 0) + (customJobsData?.total || 0);
+
   return (
     <div className="space-y-6 pb-12">
       {/* Header */}
-      <div className="border-b border-slate-800 pb-6">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
-          <KanbanSquare className="w-7 h-7 text-indigo-400" />
-          Application Pipeline
-        </h1>
-        <p className="text-sm text-slate-400 mt-1">
-          Track, organize, and manage your job applications across every stage of the hiring funnel.
-        </p>
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
+            <KanbanSquare className="w-7 h-7 text-indigo-400" />
+            Application Pipeline
+          </h1>
+          <p className="text-sm text-slate-400 mt-1">
+            Track, organize, and manage your job applications across every stage of the hiring funnel.
+          </p>
+        </div>
+
+        <button
+          onClick={() => setIsPasteModalOpen(true)}
+          className="px-4 py-2.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs rounded-xl flex items-center space-x-2 shadow-lg shadow-indigo-500/25 transition-all transform hover:-translate-y-0.5"
+        >
+          <Sparkles className="w-4 h-4 text-amber-300" />
+          <span>+ Paste Job Link</span>
+        </button>
       </div>
 
       {/* Filter Tabs */}
@@ -121,7 +164,7 @@ function ApplicationsPage() {
               : "bg-slate-900 text-slate-400 border-slate-800 hover:border-slate-700"
           }`}
         >
-          All Applications ({data?.total || 0})
+          All Applications ({totalItems})
         </button>
 
         {STATUSES.map((st) => (
@@ -139,22 +182,144 @@ function ApplicationsPage() {
         ))}
       </div>
 
-      {/* Applications List */}
-      {isLoading ? (
+      {/* Applications & Custom Jobs Grid */}
+      {isLoading || isCustomJobsLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {[1, 2, 3].map((i) => (
             <div key={i} className="h-48 bg-slate-900/50 rounded-2xl animate-pulse border border-slate-800" />
           ))}
         </div>
-      ) : data?.items && data.items.length > 0 ? (
+      ) : totalItems > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {data.items.map((app) => {
+          {/* Custom User-Added Jobs */}
+          {customJobsData?.items.map((job) => {
+            const currentStatus = STATUSES.find((s) => s.id === job.status) || STATUSES[0];
+
+            return (
+              <div
+                key={`custom-${job.id}`}
+                className="bg-slate-900/90 border border-indigo-500/30 p-6 rounded-2xl flex flex-col justify-between space-y-4 shadow-xl hover:border-indigo-500/60 transition-all group relative overflow-hidden"
+              >
+                <div className="absolute top-0 right-0 px-3 py-1 bg-indigo-500/10 border-b border-l border-indigo-500/30 rounded-bl-xl text-[10px] font-bold text-indigo-400 flex items-center gap-1">
+                  <Link2 className="w-3 h-3" />
+                  <span>Custom Link</span>
+                </div>
+
+                <div className="space-y-3 pt-2">
+                  <div className="flex items-center justify-between">
+                    <span
+                      className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border ${currentStatus.color}`}
+                    >
+                      {currentStatus.label}
+                    </span>
+
+                    <button
+                      onClick={() => deleteCustomJobMutation.mutate(job.id)}
+                      className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                      title="Delete Custom Job"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <div>
+                    <h3 className="text-base font-bold text-white group-hover:text-indigo-400 transition-colors line-clamp-1">
+                      {job.title}
+                    </h3>
+                    <p className="text-xs font-semibold text-slate-300 flex items-center gap-1.5 mt-1">
+                      <Building2 className="w-3.5 h-3.5 text-slate-500" />
+                      {job.company}
+                      {job.source_name && (
+                        <span className="text-[10px] font-normal text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
+                          {job.source_name}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5 text-xs text-slate-400 pt-1">
+                    {job.location && (
+                      <p className="flex items-center gap-1.5">
+                        <MapPin className="w-3.5 h-3.5 text-slate-500" />
+                        {job.location}
+                      </p>
+                    )}
+
+                    {(job.salary_min || job.salary_max) && (
+                      <p className="flex items-center gap-1 text-emerald-400 font-semibold">
+                        <DollarSign className="w-3.5 h-3.5" />
+                        {job.salary_currency === "INR" ? "₹" : "$"}
+                        {job.salary_min?.toLocaleString()} - {job.salary_currency === "INR" ? "₹" : "$"}
+                        {job.salary_max?.toLocaleString()}
+                      </p>
+                    )}
+
+                    <p className="flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-slate-500" />
+                      Added: {new Date(job.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+
+                  {job.required_skills && job.required_skills.length > 0 && (
+                    <div className="flex flex-wrap gap-1 pt-1">
+                      {job.required_skills.slice(0, 4).map((skill) => (
+                        <span
+                          key={skill}
+                          className="px-2 py-0.5 bg-slate-800 text-[10px] text-indigo-300 rounded-md font-medium"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  {job.notes && (
+                    <div className="p-2.5 rounded-xl bg-slate-950/60 border border-slate-800 text-[11px] text-slate-300">
+                      <span className="font-semibold text-slate-500 block mb-0.5">Notes:</span>
+                      {job.notes}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-3 border-t border-slate-800/80 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <select
+                      value={job.status}
+                      onChange={(e) => handleCustomJobStatusChange(job.id, e.target.value)}
+                      className="px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-800 text-xs font-semibold text-slate-300 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                    >
+                      {STATUSES.map((st) => (
+                        <option key={st.id} value={st.id}>
+                          Move to {st.label}
+                        </option>
+                      ))}
+                    </select>
+
+                    {job.source_url && (
+                      <a
+                        href={job.source_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/30 text-xs font-semibold rounded-xl flex items-center gap-1 transition-colors"
+                      >
+                        <Globe className="w-3.5 h-3.5" />
+                        <span>Link</span>
+                      </a>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+
+          {/* Standard Scraped Applications */}
+          {data?.items.map((app) => {
             const currentStatus = STATUSES.find((s) => s.id === app.status) || STATUSES[0];
             const opp = app.opportunity;
 
             return (
               <div
-                key={app.id}
+                key={`app-${app.id}`}
                 className="bg-slate-900/80 border border-slate-800 p-6 rounded-2xl flex flex-col justify-between space-y-4 shadow-xl hover:border-slate-700 transition-all group"
               >
                 <div className="space-y-3">
@@ -215,7 +380,7 @@ function ApplicationsPage() {
                     {(opp?.salary_min || opp?.salary_max) && (
                       <p className="flex items-center gap-1 text-emerald-400 font-semibold">
                         <DollarSign className="w-3.5 h-3.5" />
-                        ${opp.salary_min?.toLocaleString()} - ${opp.salary_max?.toLocaleString()}
+                        ₹{opp.salary_min?.toLocaleString()} - ₹{opp.salary_max?.toLocaleString()}
                       </p>
                     )}
 
@@ -251,11 +416,11 @@ function ApplicationsPage() {
                       <a
                         href={opp.source_url}
                         target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-800 hover:bg-indigo-500/20 text-slate-300 hover:text-indigo-300 text-xs font-semibold border border-slate-700 transition-colors"
+                        rel="noreferrer"
+                        className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl flex items-center gap-1 transition-colors"
                       >
                         <Globe className="w-3.5 h-3.5" />
-                        <span>View Link</span>
+                        <span>View</span>
                       </a>
                     )}
                   </div>
@@ -265,139 +430,32 @@ function ApplicationsPage() {
           })}
         </div>
       ) : (
-        <div className="bg-slate-900/40 border border-slate-800 rounded-2xl p-12 text-center space-y-4">
-          <KanbanSquare className="w-12 h-12 text-slate-600 mx-auto" />
-          <h3 className="text-lg font-bold text-white">No applications in this stage</h3>
-          <p className="text-xs text-slate-400 max-w-sm mx-auto">
-            Browse opportunities in the discovery engine and click "Quick Apply" to add them to your pipeline.
+        <div className="p-12 text-center bg-slate-900/40 border border-slate-800 rounded-3xl space-y-4">
+          <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center mx-auto">
+            <KanbanSquare className="w-6 h-6" />
+          </div>
+          <h3 className="text-lg font-bold text-white">No applications in this status</h3>
+          <p className="text-xs text-slate-400 max-w-md mx-auto">
+            Save jobs from the Opportunity Explorer or paste a custom job link to start building your application pipeline.
           </p>
+          <button
+            onClick={() => setIsPasteModalOpen(true)}
+            className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-xl inline-flex items-center gap-2"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Paste First Job Link</span>
+          </button>
         </div>
       )}
 
-      {/* AI Email Generation Modal */}
-      {emailModalApp && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex justify-between items-center border-b border-slate-800 pb-4">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-indigo-400" />
-                AI Email Generator
-              </h3>
-              <button
-                onClick={() => setEmailModalApp(null)}
-                className="text-slate-500 hover:text-white transition-colors"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="flex gap-2">
-              {[
-                { id: "cover_letter", label: "Cover Letter" },
-                { id: "follow_up", label: "Follow-up Email" },
-                { id: "interview_thank_you", label: "Thank You Note" },
-              ].map((type) => (
-                <button
-                  key={type.id}
-                  onClick={() => {
-                    setEmailType(type.id);
-                    generateEmailMutation.mutate({
-                      opportunity_id: emailModalApp.opportunity_id,
-                      email_type: type.id,
-                    });
-                  }}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
-                    emailType === type.id
-                      ? "bg-indigo-600 text-white border-indigo-500"
-                      : "bg-slate-950 text-slate-400 border-slate-800 hover:border-slate-700"
-                  }`}
-                >
-                  {type.label}
-                </button>
-              ))}
-            </div>
-
-            {generateEmailMutation.isPending ? (
-              <div className="p-8 text-center text-xs text-indigo-400 animate-pulse">
-                Generating personalized AI email...
-              </div>
-            ) : generatedEmail ? (
-              <div className="space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
-                <div>
-                  <span className="text-[11px] font-bold uppercase text-slate-500 block">Subject</span>
-                  <p className="text-xs font-semibold text-slate-200">{generatedEmail.subject}</p>
-                </div>
-                <div>
-                  <span className="text-[11px] font-bold uppercase text-slate-500 block mb-1">Message Body</span>
-                  <textarea
-                    readOnly
-                    rows={8}
-                    value={generatedEmail.body}
-                    className="w-full bg-slate-900 border border-slate-800 text-xs text-slate-300 p-3 rounded-lg focus:outline-none font-mono leading-relaxed"
-                  />
-                </div>
-                <div className="flex justify-end pt-2">
-                  <button
-                    onClick={handleCopyEmail}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors"
-                  >
-                    {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-                    <span>{copied ? "Copied!" : "Copy to Clipboard"}</span>
-                  </button>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </div>
-      )}
-
-      {/* Edit Notes Modal */}
-      {editingApp && (
-        <div className="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <h3 className="text-lg font-bold text-white">Edit Application Details</h3>
-            <form onSubmit={handleSaveNotes} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Notes</label>
-                <textarea
-                  rows={4}
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Interview notes, recruiter contact info, next steps..."
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 uppercase mb-1">Salary Offered ($)</label>
-                <input
-                  type="number"
-                  value={salaryOffered}
-                  onChange={(e) => setSalaryOffered(e.target.value ? Number(e.target.value) : "")}
-                  placeholder="e.g. 140000"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-800 text-slate-200 text-xs focus:outline-none focus:border-indigo-500"
-                />
-              </div>
-
-              <div className="flex justify-end gap-3 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingApp(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-400 hover:text-white transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition-colors"
-                >
-                  Save Changes
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Paste Job Modal */}
+      <PasteJobModal
+        isOpen={isPasteModalOpen}
+        onClose={() => setIsPasteModalOpen(false)}
+        onJobSaved={() => {
+          queryClient.invalidateQueries({ queryKey: ["customJobs"] });
+        }}
+      />
     </div>
   );
 }
