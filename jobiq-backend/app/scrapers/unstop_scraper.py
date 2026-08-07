@@ -1,9 +1,12 @@
+from __future__ import annotations
+
 import logging
 import httpx
 
 from app.scrapers.base import BaseScraper, ScrapedOpportunity
 
 logger = logging.getLogger(__name__)
+
 
 class UnstopScraper(BaseScraper):
     source_name = "unstop"
@@ -16,9 +19,8 @@ class UnstopScraper(BaseScraper):
         }
 
         endpoints = [
-            "https://unstop.com/api/public/opportunity/search-new?opportunity=all&per_page=50",
             "https://unstop.com/api/public/opportunity/search-new?opportunity=hackathons&per_page=50",
-            "https://unstop.com/api/public/opportunity/search-new?opportunity=jobs&per_page=50",
+            "https://unstop.com/api/public/opportunity/search-new?opportunity=all&per_page=50",
         ]
 
         for url in endpoints:
@@ -46,13 +48,16 @@ class UnstopScraper(BaseScraper):
                             org = item.get("organisation", {}) or {}
                             company = (org.get("name") or "Unstop Partner").strip()
 
+                            title_lower = title.lower()
                             opp_type_raw = str(item.get("type", "")).lower()
-                            if "hackathon" in opp_type_raw or "coding" in title.lower():
+
+                            # Categorize strictly into hackathon or competition (Unstop does not produce traditional jobs)
+                            if any(k in title_lower or k in opp_type_raw for k in ["hackathon", "coding", "challenge", "ideation", "buildathon"]):
                                 opp_type = "hackathon"
-                            elif "competition" in opp_type_raw:
+                            elif any(k in title_lower or k in opp_type_raw for k in ["workshop", "webinar", "conference", "quiz", "competition", "contest", "case"]):
                                 opp_type = "competition"
                             else:
-                                opp_type = "job"
+                                opp_type = "competition"
 
                             slug = item.get("site_url") or item.get("seo_url") or item.get("slug")
                             if slug:
@@ -71,7 +76,7 @@ class UnstopScraper(BaseScraper):
                                     prize = None
 
                             description = item.get("short_desc") or None
-                            
+
                             opportunities.append(
                                 ScrapedOpportunity(
                                     title=title,
