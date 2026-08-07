@@ -8,14 +8,20 @@ from app.core.database import get_db
 from app.models.user import User
 from app.utils.auth import decode_access_token
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=False)
 
 
 def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    token: str | None = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User:
     """Decode the JWT token and return the corresponding User from the database."""
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Not authenticated",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
     payload = decode_access_token(token)
     email: str | None = payload.get("sub")
     if email is None:
@@ -32,6 +38,23 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     return user
+
+
+def get_current_user_optional(
+    token: str | None = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> User | None:
+    """Optional authentication dependency. Returns User if valid token present, else None."""
+    if not token:
+        return None
+    try:
+        payload = decode_access_token(token)
+        email: str | None = payload.get("sub")
+        if not email:
+            return None
+        return db.query(User).filter(User.email == email).first()
+    except Exception:
+        return None
 
 
 def get_current_active_user(

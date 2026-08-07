@@ -19,7 +19,7 @@ class Opportunity(Base):
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
 
     # Basic Info
-    type: Mapped[OpportunityType] = mapped_column(default=OpportunityType.JOB)
+    type: Mapped[Optional[str]] = mapped_column(String(50), default="job")
     title: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     company: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
     location: Mapped[Optional[str]] = mapped_column(String(255))

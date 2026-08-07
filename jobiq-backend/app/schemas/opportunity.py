@@ -48,7 +48,9 @@ class OpportunityRead(BaseModel):
     is_active: bool
     created_at: datetime
     updated_at: datetime
-    
+    match_score: int | None = None
+    is_saved: bool = False
+
     model_config = ConfigDict(from_attributes=True)
 
 class OpportunityUpdate(BaseModel):
