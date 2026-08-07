@@ -9,6 +9,7 @@ from app.scrapers.base import BaseScraper, ScrapedOpportunity
 
 
 class RemotiveScraper(BaseScraper):
+    source_name = "remotive"
     api_url = "https://remotive.com/api/remote-jobs"
 
     def fetch_opportunities(self, limit: int = 20) -> list[ScrapedOpportunity]:
@@ -43,6 +44,7 @@ class RemotiveScraper(BaseScraper):
                     location=(job.get("candidate_required_location") or "").strip() or None,
                     source_url=(job.get("url") or "").strip() or None,
                     description=plain_description[:1000] or None,
+                    source=self.source_name,
                 )
             )
 

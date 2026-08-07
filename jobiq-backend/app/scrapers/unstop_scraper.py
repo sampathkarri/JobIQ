@@ -1,12 +1,9 @@
-from __future__ import annotations
-
 import logging
 import httpx
 
 from app.scrapers.base import BaseScraper, ScrapedOpportunity
 
 logger = logging.getLogger(__name__)
-
 
 class UnstopScraper(BaseScraper):
     source_name = "unstop"
@@ -57,30 +54,36 @@ class UnstopScraper(BaseScraper):
                             else:
                                 opp_type = "job"
 
-                            item_id = item.get("id")
-                            slug = item.get("site_url") or item.get("slug")
+                            slug = item.get("site_url") or item.get("seo_url") or item.get("slug")
                             if slug:
-                                link = f"https://unstop.com/{slug}"
-                            elif item_id:
-                                link = f"https://unstop.com/o/{item_id}"
+                                if str(slug).startswith("http"):
+                                    link = slug
+                                else:
+                                    link = f"https://unstop.com/{slug}"
                             else:
-                                link = f"https://unstop.com/opportunity/{abs(hash(title))}"
+                                continue
 
-                            region = item.get("region") or "Online / India"
-                            prize = item.get("prize_money") or 50000
+                            region = item.get("region") or "Online"
+                            prize = item.get("prize_money") or None
+                            if prize:
+                                prize = self._safe_int(str(prize))
+                                if prize == 0:
+                                    prize = None
 
+                            description = item.get("short_desc") or None
+                            
                             opportunities.append(
                                 ScrapedOpportunity(
                                     title=title,
                                     company=company,
-                                    location=f"{region}, India",
+                                    location=region,
                                     source_url=link,
                                     source=self.source_name,
                                     type=opp_type,
-                                    prize_pool=self._safe_int(str(prize)),
-                                    remote=True,
-                                    required_skills=["Competitive Coding", "System Design", "Problem Solving"],
-                                    description=f"Unstop opportunity: {title} organized by {company}.",
+                                    prize_pool=prize,
+                                    remote="online" in region.lower(),
+                                    required_skills=[],
+                                    description=description,
                                 )
                             )
                         except Exception as e:

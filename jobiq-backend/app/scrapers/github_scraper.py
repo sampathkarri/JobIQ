@@ -43,6 +43,14 @@ class ArbeitNowScraper(BaseScraper):
                 if not title:
                     continue
 
+                job_types_raw = job.get("job_types")
+                if isinstance(job_types_raw, list) and len(job_types_raw) > 0:
+                    emp_type = str(job_types_raw[0])
+                elif isinstance(job_types_raw, dict):
+                    emp_type = str(next(iter(job_types_raw.values()), "Full-time"))
+                else:
+                    emp_type = "Full-time"
+
                 rows.append(
                     ScrapedOpportunity(
                         title=title,
@@ -52,8 +60,8 @@ class ArbeitNowScraper(BaseScraper):
                         description=(job.get("description") or "")[:1000].strip() or None,
                         remote=job.get("remote", False),
                         source=self.source_name,
-                        required_skills=job.get("tags", []) or ["Software Development"],
-                        employment_type=job.get("job_types", ["Full-time"])[0] if job.get("job_types") else "Full-time",
+                        required_skills=job.get("tags", []) if isinstance(job.get("tags"), list) else [],
+                        employment_type=emp_type,
                     )
                 )
             self._rate_limit()
