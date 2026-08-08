@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import and_, or_
+from sqlalchemy import and_, or_, cast, String
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
@@ -126,7 +126,7 @@ def list_opportunities(
         skill_list = [s.strip().lower() for s in skills.split(",") if s.strip()]
         if skill_list:
             for skill in skill_list:
-                query = query.filter(Opportunity.required_skills.ilike(f"%{skill}%"))
+                query = query.filter(cast(Opportunity.required_skills, String).ilike(f"%{skill}%"))
 
     total = query.count()
     offset = (page - 1) * per_page

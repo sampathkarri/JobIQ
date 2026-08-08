@@ -8,6 +8,11 @@ export interface JobMatch {
   matching_skills?: string[] | null;
   missing_skills?: string[] | null;
   match_reason?: string | null;
+  opportunity_title?: string | null;
+  opportunity_company?: string | null;
+  opportunity_location?: string | null;
+  opportunity_type?: string | null;
+  opportunity_source_url?: string | null;
   created_at: string;
   updated_at: string;
 }

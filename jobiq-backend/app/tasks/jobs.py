@@ -1,7 +1,7 @@
 import logging
 from datetime import datetime, timedelta
 from app.tasks.worker import celery_app
-from app.database import SessionLocal
+from app.core.database import SessionLocal
 from app.models.opportunity import Opportunity
 from app.services.opportunity_ingestion import ingest_all_sources, ingest_opportunities
 from app.scrapers.deduplicator import deduplicate_opportunities
@@ -25,14 +25,16 @@ def scrape_all_sources():
 def scrape_single_source(source_name: str):
     db = SessionLocal()
     try:
-        from app.scrapers.github_scraper import ArbeitNowScraper
         from app.scrapers.internshala_scraper import InternshalaScraper
         from app.scrapers.unstop_scraper import UnstopScraper
+        from app.scrapers.linkedin_scraper import LinkedInScraper
+        from app.scrapers.naukri_scraper import NaukriScraper
         
         scrapers = {
-            "arbeitnow": ArbeitNowScraper,
             "internshala": InternshalaScraper,
-            "unstop": UnstopScraper
+            "unstop": UnstopScraper,
+            "linkedin": LinkedInScraper,
+            "naukri": NaukriScraper,
         }
         
 

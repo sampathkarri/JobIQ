@@ -1,11 +1,13 @@
 from celery import Celery
 from celery.schedules import crontab
-from app.config import settings
+from app.core.config import get_settings
+
+settings = get_settings()
 
 celery_app = Celery(
     "jobiq_worker",
-    broker=settings.REDIS_URL,
-    backend=settings.REDIS_URL,
+    broker=settings.celery_broker_url,
+    backend=settings.celery_result_backend,
     include=["app.tasks.jobs"]
 )
 

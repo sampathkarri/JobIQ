@@ -61,5 +61,5 @@ def remote_ratio(jobs: list[dict[str, Any]]) -> float:
     """Percentage of remote jobs."""
     if not jobs:
         return 0.0
-    remote_count = sum(1 for job in jobs if job.get("is_remote") or "remote" in job.get("location", "").lower())
+    remote_count = sum(1 for job in jobs if job.get("remote") or "remote" in job.get("location", "").lower())
     return (remote_count / len(jobs)) * 100

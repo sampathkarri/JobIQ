@@ -12,7 +12,6 @@ import {
   Sparkles,
   RefreshCw,
   CheckCircle2,
-  AlertCircle,
   X,
   ChevronLeft,
   ChevronRight,
@@ -26,7 +25,7 @@ import { PasteJobModal } from "../components/PasteJobModal";
 
 function OpportunitiesPage() {
   const queryClient = useQueryClient();
-  const { isAuthenticated } = useAuthStore();
+  // const { isAuthenticated } = useAuthStore();
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState("");
@@ -47,7 +46,7 @@ function OpportunitiesPage() {
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
 
   // Fetch Opportunities Query
-  const { data, isLoading, isFetching, refetch } = useQuery({
+  const { data, isLoading, isFetching } = useQuery({
     queryKey: [
       "opportunities",
       searchTerm,
@@ -446,7 +445,7 @@ function OpportunitiesPage() {
       )}
 
       {/* Pagination */}
-      {data?.total && data.total > 12 && (
+      {data?.total && data.total > perPage && (
         <div className="flex justify-center items-center gap-4 pt-6">
           <button
             onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -456,11 +455,11 @@ function OpportunitiesPage() {
             <ChevronLeft className="w-5 h-5" />
           </button>
           <span className="text-xs font-semibold text-slate-400">
-            Page {page} of {Math.ceil(data.total / 12)}
+            Page {page} of {Math.ceil(data.total / perPage)}
           </span>
           <button
             onClick={() => setPage((p) => p + 1)}
-            disabled={page >= Math.ceil(data.total / 12)}
+            disabled={page >= Math.ceil(data.total / perPage)}
             className="p-2 rounded-xl bg-slate-900 border border-slate-800 text-slate-300 hover:bg-slate-800 disabled:opacity-40"
           >
             <ChevronRight className="w-5 h-5" />
