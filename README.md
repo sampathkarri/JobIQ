@@ -83,9 +83,9 @@ starter-project/
 ## 💻 Local Development Setup
 
 ### Prerequisites
-- Node.js (v18+)
-- Python (v3.9+)
-- PostgreSQL (Local or Supabase URI)
+- **Node.js** (v18+)
+- **Python** (v3.9+) with **FastAPI Framework**
+- **PostgreSQL** (Local or Supabase URI)
 
 ### 1. Backend Setup
 
