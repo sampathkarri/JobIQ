@@ -83,9 +83,9 @@ starter-project/
 ## 💻 Local Development Setup
 
 ### Prerequisites
-- **Node.js** (v18+)
-- **Python** (v3.9+) with **FastAPI Framework**
-- **PostgreSQL** (Local or Supabase URI)
+- **Node.js & npm** (Required locally to run `npm run dev` and build the React frontend)
+- **Python (v3.9+)** (Required locally to run the **FastAPI** backend server)
+- **PostgreSQL** (Local database or free Supabase cloud URI)
 
 ### 1. Backend Setup
 
