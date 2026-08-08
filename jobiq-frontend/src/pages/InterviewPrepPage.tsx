@@ -14,73 +14,22 @@ import {
   Target,
   TrendingUp,
   Lightbulb,
-  Globe,
-  Loader2,
 } from "lucide-react";
-import { interviewPrepApi } from "../api/interviewPrep";
-
-interface Question {
-  id: number;
-  category: "Technical" | "Behavioral" | "System Design" | "HR" | "DSA";
-  role: string;
-  difficulty: "Easy" | "Medium" | "Hard";
-  title: string;
-  tips: string;
-  keywords: string[];
-  ideal_points: string[];
-  company?: string;
-  source_url?: string;
-}
-
-const INITIAL_QUESTION_BANK: Question[] = [
-  {
-    id: 1, category: "Technical", role: "Full-Stack Engineer", difficulty: "Medium",
-    title: "Explain how FastAPI handles asynchronous requests and how it compares to Flask.",
-    tips: "Mention Python async/await, Starlette event loops, ASGI servers (Uvicorn), and non-blocking I/O.",
-    keywords: ["async", "await", "uvicorn", "asgi", "starlette", "non-blocking", "event loop"],
-    ideal_points: ["Async/await syntax", "ASGI vs WSGI", "Uvicorn server", "Performance benefits", "Comparison with Flask"],
-    company: "Google",
-  },
-  {
-    id: 2, category: "System Design", role: "Backend Engineer", difficulty: "Hard",
-    title: "Design a high-throughput job scraper system that aggregates 1000+ listings daily with deduplication.",
-    tips: "Discuss Celery task queues, Redis brokers, fuzzy deduplication (SequenceMatcher), and rate limiting.",
-    keywords: ["celery", "redis", "queue", "deduplication", "rate limit", "scraper", "scheduler"],
-    ideal_points: ["Task queue architecture", "Redis as broker", "Deduplication strategy", "Rate limiting", "Error handling"],
-    company: "Uber",
-  },
-  {
-    id: 3, category: "Behavioral", role: "Software Engineer", difficulty: "Easy",
-    title: "Tell me about a time you encountered a tight deadline and had to make technical trade-offs.",
-    tips: "Use the STAR method: Situation, Task, Action, Result. Highlight communication and prioritizing MVP.",
-    keywords: ["star", "situation", "task", "action", "result", "deadline", "trade-off", "priority"],
-    ideal_points: ["STAR structure", "Specific situation", "Clear trade-offs made", "Quantifiable result", "Learnings"],
-    company: "Amazon",
-  },
-  {
-    id: 4, category: "HR", role: "Any Role", difficulty: "Easy",
-    title: "Tell me about yourself and walk me through your resume.",
-    tips: "Keep it under 2 minutes. Structure: current project → key skills → why you're here.",
-    keywords: ["project", "built", "developed", "skills", "passion", "achieve", "learn", "result"],
-    ideal_points: ["Clear narrative", "Relevant highlights", "Key technical skills", "Recent project", "Why this role"],
-    company: "General",
-  },
-  {
-    id: 5, category: "DSA", role: "SDE", difficulty: "Medium",
-    title: "Explain how you would find two numbers in an array that add up to a target sum efficiently.",
-    tips: "Describe the brute force O(n²) approach, then optimize with a HashMap to get O(n) time complexity.",
-    keywords: ["hashmap", "dictionary", "two pointer", "o(n)", "complement", "brute force", "optimize", "time complexity"],
-    ideal_points: ["Brute force mention", "HashMap optimization", "Time complexity", "Space complexity", "Edge cases"],
-    company: "Microsoft",
-  },
-];
+import { QUESTION_BANK, Question } from "../data/interviewQuestions";
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Technical: "bg-blue-500/10 text-blue-300 border-blue-500/20",
-  Behavioral: "bg-amber-500/10 text-amber-300 border-amber-500/20",
-  "System Design": "bg-purple-500/10 text-purple-300 border-purple-500/20",
-  HR: "bg-teal-500/10 text-teal-300 border-teal-500/20",
+  DBMS: "bg-blue-500/10 text-blue-300 border-blue-500/20",
+  OOPs: "bg-emerald-500/10 text-emerald-300 border-emerald-500/20",
+  "Computer Networks": "bg-cyan-500/10 text-cyan-300 border-cyan-500/20",
+  "Software Eng": "bg-indigo-500/10 text-indigo-300 border-indigo-500/20",
+  Git: "bg-orange-500/10 text-orange-300 border-orange-500/20",
+  SQL: "bg-sky-500/10 text-sky-300 border-sky-500/20",
   DSA: "bg-rose-500/10 text-rose-300 border-rose-500/20",
+  HR: "bg-teal-500/10 text-teal-300 border-teal-500/20",
+  Backend: "bg-purple-500/10 text-purple-300 border-purple-500/20",
+  Frontend: "bg-pink-500/10 text-pink-300 border-pink-500/20",
+  Python: "bg-yellow-500/10 text-yellow-300 border-yellow-500/20",
+  Java: "bg-amber-500/10 text-amber-300 border-amber-500/20",
 };
 
 const DIFFICULTY_COLORS: Record<string, string> = {
@@ -139,10 +88,9 @@ function analyzeAnswer(transcript: string, question: Question): FeedbackResult {
 }
 
 function InterviewPrepPage() {
-  const [questions, setQuestions] = useState<Question[]>(INITIAL_QUESTION_BANK);
   const [selectedCategory, setSelectedCategory] = useState<string>("All");
   const [selectedDifficulty, setSelectedDifficulty] = useState<string>("All");
-  const [activeQuestion, setActiveQuestion] = useState<Question>(INITIAL_QUESTION_BANK[0]);
+  const [activeQuestion, setActiveQuestion] = useState<Question>(QUESTION_BANK[0]);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [feedback, setFeedback] = useState<FeedbackResult | null>(null);
@@ -150,8 +98,6 @@ function InterviewPrepPage() {
   const [timer, setTimer] = useState(0);
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [sessionScores, setSessionScores] = useState<number[]>([]);
-  const [isScraping, setIsScraping] = useState(false);
-  const [scrapeSuccessMsg, setScrapeSuccessMsg] = useState<string | null>(null);
   const timerRef = useRef<any>(null);
 
   useEffect(() => {
@@ -230,27 +176,23 @@ function InterviewPrepPage() {
     selectQuestion(next);
   };
 
-  const handleScrapeInterviewBit = async () => {
-    setIsScraping(true);
-    setScrapeSuccessMsg(null);
-    try {
-      const data = await interviewPrepApi.fetchInterviewBitQuestions();
-      if (data.questions && data.questions.length > 0) {
-        setQuestions((prev) => {
-          const existingTitles = new Set(prev.map((q) => q.title.toLowerCase()));
-          const newQuestions = data.questions.filter((q) => !existingTitles.has(q.title.toLowerCase()));
-          return [...prev, ...newQuestions];
-        });
-        setScrapeSuccessMsg(`Successfully scraped ${data.questions.length} live InterviewBit questions!`);
-      }
-    } catch (err) {
-      alert("Failed to scrape InterviewBit questions. Make sure backend is running.");
-    } finally {
-      setIsScraping(false);
-    }
-  };
+  const categoriesList = [
+    "All",
+    "DBMS",
+    "OOPs",
+    "Computer Networks",
+    "Software Eng",
+    "Git",
+    "SQL",
+    "DSA",
+    "HR",
+    "Backend",
+    "Frontend",
+    "Python",
+    "Java",
+  ];
 
-  const filteredQuestions = questions.filter((q) => {
+  const filteredQuestions = QUESTION_BANK.filter((q) => {
     const catOk = selectedCategory === "All" || q.category === selectedCategory;
     const difOk = selectedDifficulty === "All" || q.difficulty === selectedDifficulty;
     return catOk && difOk;
@@ -270,55 +212,27 @@ function InterviewPrepPage() {
             AI Mock Interviewer
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Practice with curated questions or scrape live questions from InterviewBit!
+            Practice top interview questions across DBMS, OOPs, Computer Networks, SQL, DSA, Backend, Frontend, Python, and Java.
           </p>
         </div>
 
-        {/* Live Scrape Action Button */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={handleScrapeInterviewBit}
-            disabled={isScraping}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs shadow-lg shadow-purple-600/30 transition-all disabled:opacity-50"
-          >
-            {isScraping ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" />
-                Scraping InterviewBit...
-              </>
-            ) : (
-              <>
-                <Globe className="w-4 h-4 text-purple-200" />
-                Fetch Live InterviewBit Questions
-              </>
-            )}
-          </button>
-
-          {/* Session Stats */}
-          {sessionScores.length > 0 && (
-            <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 px-3 py-2 rounded-xl">
-              <div className="text-center">
-                <p className="text-[9px] text-slate-500 uppercase">Attempted</p>
-                <p className="text-sm font-extrabold text-white">{sessionScores.length}</p>
-              </div>
-              <div className="w-px h-6 bg-slate-700" />
-              <div className="text-center">
-                <p className="text-[9px] text-slate-500 uppercase">Avg Score</p>
-                <p className={`text-sm font-extrabold ${avgScore! >= 70 ? "text-emerald-400" : avgScore! >= 50 ? "text-amber-400" : "text-rose-400"}`}>
-                  {avgScore}%
-                </p>
-              </div>
+        {/* Session Stats */}
+        {sessionScores.length > 0 && (
+          <div className="flex items-center gap-3 bg-slate-900 border border-slate-800 px-3 py-2 rounded-xl">
+            <div className="text-center">
+              <p className="text-[9px] text-slate-500 uppercase">Attempted</p>
+              <p className="text-sm font-extrabold text-white">{sessionScores.length}</p>
             </div>
-          )}
-        </div>
+            <div className="w-px h-6 bg-slate-700" />
+            <div className="text-center">
+              <p className="text-[9px] text-slate-500 uppercase">Avg Score</p>
+              <p className={`text-sm font-extrabold ${avgScore! >= 70 ? "text-emerald-400" : avgScore! >= 50 ? "text-amber-400" : "text-rose-400"}`}>
+                {avgScore}%
+              </p>
+            </div>
+          </div>
+        )}
       </div>
-
-      {scrapeSuccessMsg && (
-        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 text-xs font-semibold flex items-center gap-2">
-          <CheckCircle className="w-4 h-4 text-emerald-400 shrink-0" />
-          {scrapeSuccessMsg}
-        </div>
-      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Question Bank */}
@@ -326,20 +240,20 @@ function InterviewPrepPage() {
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-bold text-white flex items-center gap-2">
               <BookOpen className="w-4 h-4 text-purple-400" />
-              Question Bank
+              Interview Topics
             </h3>
             <span className="text-xs text-slate-500">{filteredQuestions.length} questions</span>
           </div>
 
-          {/* Category Filter */}
-          <div className="flex flex-wrap gap-1">
-            {["All", "Technical", "Behavioral", "System Design", "HR", "DSA"].map((cat) => (
+          {/* Category Filter Pills */}
+          <div className="flex flex-wrap gap-1 max-h-28 overflow-y-auto pr-1 scrollbar-thin">
+            {categoriesList.map((cat) => (
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
                 className={`px-2.5 py-1 rounded-lg text-[10px] font-bold transition-all ${
                   selectedCategory === cat
-                    ? "bg-indigo-600 text-white"
+                    ? "bg-indigo-600 text-white shadow-md shadow-indigo-600/30"
                     : "bg-slate-900 border border-slate-800 text-slate-400 hover:text-white"
                 }`}
               >
@@ -366,7 +280,7 @@ function InterviewPrepPage() {
           </div>
 
           {/* Questions List */}
-          <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-1 scrollbar-thin">
+          <div className="space-y-2 max-h-[55vh] overflow-y-auto pr-1 scrollbar-thin">
             {filteredQuestions.map((q) => (
               <div
                 key={q.id}
@@ -430,7 +344,7 @@ function InterviewPrepPage() {
             {/* Key Points to Cover */}
             <div>
               <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-1">
-                <Target className="w-3 h-3" /> Cover These Points
+                <Target className="w-3 h-3" /> Key Points to Cover in Answer
               </p>
               <div className="flex flex-wrap gap-1.5">
                 {activeQuestion.ideal_points.map((pt, i) => (

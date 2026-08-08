@@ -4,7 +4,6 @@ from app.routes.admin import router as admin_router
 from app.routes.analytics import router as analytics_router
 from app.routes.applications import router as applications_router
 from app.routes.auth import router as auth_router
-from app.routes.interview_prep import router as interview_prep_router
 from app.routes.custom_jobs import router as custom_jobs_router
 from app.routes.health import router as health_router
 from app.routes.job_matches import router as job_matches_router
@@ -27,4 +26,3 @@ api_router.include_router(websocket_router)
 api_router.include_router(analytics_router)
 api_router.include_router(admin_router)
 api_router.include_router(custom_jobs_router)
-api_router.include_router(interview_prep_router)
