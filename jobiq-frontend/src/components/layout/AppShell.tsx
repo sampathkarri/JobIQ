@@ -64,9 +64,11 @@ function AppShell({ children }: AppShellProps) {
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3 sm:px-6">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-pink-500 flex items-center justify-center shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-200">
-              <Zap className="w-5 h-5 text-white" />
-            </div>
+            <img
+              src="/favicon.svg"
+              alt="JobIQ Logo"
+              className="w-9 h-9 rounded-xl shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform duration-200"
+            />
             <div>
               <span className="text-xl font-bold bg-gradient-to-r from-white via-slate-200 to-indigo-300 bg-clip-text text-transparent">
                 Job<span className="text-indigo-400">IQ</span>
