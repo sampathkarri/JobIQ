@@ -1,3 +1,4 @@
+import threading
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -16,12 +17,12 @@ def create_app() -> FastAPI:
         description="JobIQ AI-Powered Career Opportunities Platform API",
     )
 
-    # Allow all local origins (port 5173, 5174, 3000, etc.) for local development
     origins = [
         "http://localhost:5173",
         "http://localhost:5174",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:5174",
+        "https://job-iq-six.vercel.app",
         "*",
     ]
 
@@ -41,14 +42,19 @@ def create_app() -> FastAPI:
             "message": "Welcome to JobIQ API Backend!",
             "status": "online",
             "documentation": "/docs",
-            "frontend_app": "http://localhost:5174/",
             "api_v1_prefix": settings.api_v1_prefix,
         }
 
     @app.on_event("startup")
     def on_startup() -> None:
-        Base.metadata.create_all(bind=engine)
-        bootstrap_data()
+        # Create all tables in Supabase database
+        try:
+            Base.metadata.create_all(bind=engine)
+        except Exception as e:
+            print(f"Error creating DB tables: {e}")
+
+        # Run initial ingestion asynchronously in background thread so port binds immediately
+        threading.Thread(target=bootstrap_data, daemon=True).start()
 
     return app
 
