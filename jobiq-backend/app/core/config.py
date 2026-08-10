@@ -5,8 +5,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     app_name: str = "JobIQ API"
-    app_env: str = "development"
-    debug: bool = True
+    app_env: str = "production"
+    debug: bool = False
     api_v1_prefix: str = "/api/v1"
 
     database_url: str = "postgresql+psycopg2://postgres:Sampath%409866@localhost:5432/jobiq"
@@ -18,9 +18,9 @@ class Settings(BaseSettings):
         "*"
     ]
 
-    jwt_secret_key: str = "jobiq-production-jwt-secret-key-2026-secure-token"
+    jwt_secret_key: str = "jobiq-dev-secret-key-change-in-production"
     jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60 * 24 * 7  # 7 days expiration for smooth user session
+    access_token_expire_minutes: int = 60 * 24 * 7  # 7 days expiration
 
     redis_url: str = "redis://localhost:6379/0"
     celery_broker_url: str = "redis://localhost:6379/0"
