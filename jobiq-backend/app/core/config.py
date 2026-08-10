@@ -9,7 +9,8 @@ class Settings(BaseSettings):
     debug: bool = False
     api_v1_prefix: str = "/api/v1"
 
-    database_url: str = "postgresql+psycopg2://postgres:Sampath%409866@localhost:5432/jobiq"
+    # Default fallback for local dev (overridden by DATABASE_URL env var in production)
+    database_url: str = "postgresql+psycopg2://postgres:password@localhost:5432/jobiq"
 
     cors_origins: list[str] = [
         "http://localhost:5173",
