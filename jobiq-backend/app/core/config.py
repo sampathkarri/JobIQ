@@ -9,13 +9,18 @@ class Settings(BaseSettings):
     debug: bool = True
     api_v1_prefix: str = "/api/v1"
 
-    database_url: str = "postgresql+psycopg2://jobiq:jobiq@localhost:5432/jobiq"
+    database_url: str = "postgresql+psycopg2://postgres:Sampath%409866@localhost:5432/jobiq"
 
-    cors_origins: list[str] = ["http://localhost:5173"]
+    cors_origins: list[str] = [
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "https://job-iq-six.vercel.app",
+        "*"
+    ]
 
-    jwt_secret_key: str = "replace-with-a-secure-secret"
+    jwt_secret_key: str = "jobiq-production-jwt-secret-key-2026-secure-token"
     jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60
+    access_token_expire_minutes: int = 60 * 24 * 7  # 7 days expiration for smooth user session
 
     redis_url: str = "redis://localhost:6379/0"
     celery_broker_url: str = "redis://localhost:6379/0"
@@ -27,4 +32,3 @@ class Settings(BaseSettings):
 @lru_cache(maxsize=1)
 def get_settings() -> Settings:
     return Settings()
-
