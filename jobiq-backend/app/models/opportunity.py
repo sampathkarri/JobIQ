@@ -72,7 +72,6 @@ class Opportunity(Base):
 
     # Relationships
     applications = relationship("Application", back_populates="opportunity", cascade="all, delete-orphan")
-    saved_by_users = relationship("SavedOpportunity", back_populates="opportunity", cascade="all, delete-orphan")
     job_matches = relationship("JobMatch", back_populates="opportunity", cascade="all, delete-orphan")
 
     def __repr__(self) -> str:
