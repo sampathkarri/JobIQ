@@ -3,7 +3,6 @@ from .user import UserRead, UserUpdate
 from .application import ApplicationCreate, ApplicationRead, ApplicationUpdate, ApplicationListResponse
 from .resume import ResumeCreate, ResumeRead, ResumeListResponse
 from .job_match import JobMatchRead, JobMatchListResponse
-from .saved_opportunity import SavedOpportunityCreate, SavedOpportunityRead, SavedOpportunityListResponse
 from .opportunity import (
     OpportunityCreate,
     OpportunityRead,
@@ -29,9 +28,6 @@ __all__ = [
     "ResumeListResponse",
     "JobMatchRead",
     "JobMatchListResponse",
-    "SavedOpportunityCreate",
-    "SavedOpportunityRead",
-    "SavedOpportunityListResponse",
     "OpportunityCreate",
     "OpportunityRead",
     "OpportunityUpdate",

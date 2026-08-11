@@ -3,7 +3,6 @@ from app.models.custom_job import CustomJob
 from app.models.job_match import JobMatch
 from app.models.opportunity import Opportunity
 from app.models.resume import Resume
-from app.models.saved_opportunity import SavedOpportunity
 from app.models.user import User
 
 __all__ = [
@@ -12,6 +11,5 @@ __all__ = [
     "JobMatch",
     "Opportunity",
     "Resume",
-    "SavedOpportunity",
     "User",
 ]

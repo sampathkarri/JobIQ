@@ -5,7 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.utils.dependencies import get_current_active_user
-from app.models import Opportunity, Application, JobMatch, SavedOpportunity, User
+from app.models import Opportunity, Application, JobMatch, User
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -19,31 +19,32 @@ def get_market_analytics(db: Session = Depends(get_db)):
     salary_mins = []
     salary_maxs = []
     type_counter = Counter()
-    remote_count = 0
     company_counter = Counter()
-    
+    remote_count = 0
+
     for opp in active_opportunities:
         if opp.required_skills:
-            try:
-                skills = json.loads(opp.required_skills)
-                if isinstance(skills, list):
-                    skills_counter.update(skills)
-            except:
-                pass
-                
-        if opp.salary_min is not None:
+            if isinstance(opp.required_skills, list):
+                skills_counter.update(opp.required_skills)
+            elif isinstance(opp.required_skills, str):
+                try:
+                    skills_list = json.loads(opp.required_skills)
+                    if isinstance(skills_list, list):
+                        skills_counter.update(skills_list)
+                except Exception:
+                    pass
+        
+        if opp.salary_min:
             salary_mins.append(opp.salary_min)
-        if opp.salary_max is not None:
+        if opp.salary_max:
             salary_maxs.append(opp.salary_max)
             
-        if opp.employment_type:
-            type_counter[opp.employment_type] += 1
-            
-        if opp.remote:
-            remote_count += 1
-            
+        if opp.type:
+            type_counter[opp.type] += 1
         if opp.company:
             company_counter[opp.company] += 1
+        if opp.remote:
+            remote_count += 1
             
     top_skills = [{"skill": k, "count": v} for k, v in skills_counter.most_common(20)]
     type_breakdown = [{"type": k, "count": v} for k, v in type_counter.items()]
@@ -86,10 +87,8 @@ def get_personal_analytics(
     total_matches = matches_agg.total or 0
     avg_match_score = matches_agg.avg_score or 0.0
     
-    total_saved = db.query(SavedOpportunity).filter(SavedOpportunity.user_id == current_user.id).count()
-    
     funnel = {
-        "interested": total_saved,
+        "saved": status_counter.get("saved", 0),
         "applied": status_counter.get("applied", 0),
         "interviewing": status_counter.get("interviewing", 0),
         "offered": status_counter.get("offered", 0),
@@ -102,6 +101,5 @@ def get_personal_analytics(
         "status_breakdown": status_breakdown,
         "total_matches": total_matches,
         "avg_match_score": avg_match_score,
-        "total_saved": total_saved,
         "funnel": funnel
     }
