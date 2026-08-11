@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { opportunitiesApi, Opportunity } from "../api/opportunities";
 import { applicationsApi } from "../api/applications";
-import { savedOpportunitiesApi } from "../api/savedOpportunities";
 import { useAuthStore } from "../store/useAuthStore";
 import { PasteJobModal } from "../components/PasteJobModal";
 
@@ -71,18 +70,6 @@ function OpportunitiesPage() {
         page,
         per_page: perPage,
       }),
-  });
-
-  // Save Opportunity Mutation
-  const saveMutation = useMutation({
-    mutationFn: (opportunityId: number) => savedOpportunitiesApi.saveOpportunity(opportunityId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["savedOpportunities"] });
-      showToast("Opportunity bookmarked successfully!");
-    },
-    onError: (err: any) => {
-      showToast(err.response?.data?.detail || "Could not save opportunity.");
-    },
   });
 
   // Apply Mutation
@@ -394,15 +381,7 @@ function OpportunitiesPage() {
               </div>
 
               {/* Action Footer */}
-              <div className="flex items-center justify-between gap-3 pt-5 mt-4 border-t border-slate-800/60">
-                <button
-                  onClick={() => saveMutation.mutate(opp.id)}
-                  className="p-2 rounded-xl text-slate-400 hover:text-amber-400 hover:bg-amber-500/10 border border-slate-800 transition-colors"
-                  title="Save Opportunity"
-                >
-                  <Bookmark className="w-4 h-4" />
-                </button>
-
+              <div className="flex items-center justify-end gap-3 pt-5 mt-4 border-t border-slate-800/60">
                 <div className="flex items-center gap-2">
                   {opp.source_url && (
                     <a

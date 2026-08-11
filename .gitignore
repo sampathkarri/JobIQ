@@ -9,3 +9,5 @@ dist/
 *.tsbuildinfo
 *.timestamp-*.mjs
 .DS_Store
+*.zip
+*.pdf

@@ -19,7 +19,6 @@ import { useAuthStore } from "../store/useAuthStore";
 import { opportunitiesApi } from "../api/opportunities";
 import { applicationsApi } from "../api/applications";
 import { jobMatchesApi } from "../api/jobMatches";
-import { savedOpportunitiesApi } from "../api/savedOpportunities";
 import { analyticsApi } from "../api/analytics";
 
 function HomePage() {
@@ -39,12 +38,6 @@ function HomePage() {
   const { data: applications } = useQuery({
     queryKey: ["applications"],
     queryFn: () => applicationsApi.getApplications(),
-    enabled: isAuthenticated,
-  });
-
-  const { data: savedOpps } = useQuery({
-    queryKey: ["savedOpportunities"],
-    queryFn: () => savedOpportunitiesApi.getSavedOpportunities(),
     enabled: isAuthenticated,
   });
 
@@ -134,13 +127,13 @@ function HomePage() {
         </div>
 
         <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl flex items-center gap-4 shadow-xl">
-          <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 flex items-center justify-center shrink-0">
-            <Bookmark className="w-6 h-6" />
+          <div className="w-12 h-12 rounded-xl bg-pink-500/10 border border-pink-500/20 text-pink-400 flex items-center justify-center shrink-0">
+            <Zap className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Saved Opportunities</p>
-            <h3 className="text-2xl font-bold text-white mt-0.5">{savedOpps?.items?.length || 0}</h3>
-            <p className="text-xs text-amber-400 mt-1">Bookmarked for later</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Interview Questions</p>
+            <h3 className="text-2xl font-bold text-white mt-0.5">300</h3>
+            <p className="text-xs text-pink-400 mt-1">Across 12 technical domains</p>
           </div>
         </div>
       </div>
