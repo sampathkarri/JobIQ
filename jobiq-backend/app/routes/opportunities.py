@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import and_, or_, cast, String
 from sqlalchemy.orm import Session
@@ -57,6 +58,9 @@ def _opportunity_to_read(
         source_url=opp.source_url,
         source_job_id=opp.source_job_id,
         company_logo_url=opp.company_logo_url,
+        is_active=opp.is_active if opp.is_active is not None else True,
+        created_at=opp.created_at or datetime.utcnow(),
+        updated_at=opp.updated_at or datetime.utcnow(),
         match_score=match_score,
         is_saved=False,
     )
@@ -79,7 +83,7 @@ def list_opportunities(
     """List opportunities with filtering and pagination."""
     query = db.query(Opportunity).filter(Opportunity.is_active == True)
 
-    if q:
+    if q and isinstance(q, str):
         search_pattern = f"%{q}%"
         query = query.filter(
             or_(
@@ -89,22 +93,22 @@ def list_opportunities(
             )
         )
 
-    if location:
+    if location and isinstance(location, str):
         query = query.filter(Opportunity.location.ilike(f"%{location}%"))
 
-    if type:
+    if type and isinstance(type, str):
         query = query.filter(Opportunity.type == type)
 
-    if job_level:
+    if job_level and isinstance(job_level, str):
         query = query.filter(Opportunity.job_level == job_level)
 
-    if remote is not None:
+    if isinstance(remote, bool):
         query = query.filter(Opportunity.remote == remote)
 
-    if salary_min is not None:
+    if isinstance(salary_min, int):
         query = query.filter(Opportunity.salary_max >= salary_min)
 
-    if skills:
+    if skills and isinstance(skills, str):
         skill_list = [s.strip() for s in skills.split(",") if s.strip()]
         for skill in skill_list:
             query = query.filter(cast(Opportunity.required_skills, String).ilike(f"%{skill}%"))
@@ -114,7 +118,7 @@ def list_opportunities(
     opportunities = query.order_by(Opportunity.created_at.desc()).offset(offset).limit(per_page).all()
 
     items = []
-    if current_user:
+    if current_user and isinstance(current_user, User):
         for opp in opportunities:
             match = (
                 db.query(JobMatch)
@@ -194,7 +198,7 @@ def get_opportunity_details(
     match_score = None
     match_reason = None
 
-    if current_user:
+    if current_user and isinstance(current_user, User):
         match = (
             db.query(JobMatch)
             .filter(
