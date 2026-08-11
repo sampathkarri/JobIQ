@@ -11,12 +11,11 @@ settings = get_settings()
 
 db_url = settings.database_url
 
-# Fix Heroku/Render legacy postgres:// scheme to postgresql://
+# Normalize legacy postgres:// scheme to postgresql://
 if db_url.startswith("postgres://"):
     db_url = db_url.replace("postgres://", "postgresql://", 1)
 
-# Safely handle passwords containing unencoded '@' symbols
-# Pattern: scheme://user:password@host:port/dbname
+# Safely handle passwords containing unencoded '@' or special characters
 pattern = r'^(postgresql(?:\+[a-zA-Z0-9]+)?:\/\/)([^:]+):(.+)@([^@:\/\?]+)(:\d+)?(\/[^\?]+)?(\?.+)?$'
 match = re.match(pattern, db_url)
 if match:
@@ -24,15 +23,11 @@ if match:
     port_str = port if port else ""
     dbname_str = dbname if dbname else "/postgres"
     query_str = query_params if query_params else ""
-    # Safe quote the password
     pwd_quoted = quote_plus(unquote(pwd))
     db_url = f"{scheme}{user}:{pwd_quoted}@{host}{port_str}{dbname_str}{query_str}"
 
-connect_args = {}
-if db_url.startswith("sqlite"):
-    connect_args = {"check_same_thread": False}
-
-engine = create_engine(db_url, pool_pre_ping=True, connect_args=connect_args)
+# Create PostgreSQL SQLAlchemy engine
+engine = create_engine(db_url, pool_pre_ping=True)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
 
