@@ -21,13 +21,8 @@ class Settings(BaseSettings):
 
     jwt_secret_key: str = "jobiq-dev-secret-key-change-in-production"
     jwt_algorithm: str = "HS256"
-    access_token_expire_minutes: int = 60 * 24 * 7  # 7 days expiration
-
-    redis_url: str = "redis://localhost:6379/0"
-    celery_broker_url: str = "redis://localhost:6379/0"
-    celery_result_backend: str = "redis://localhost:6379/1"
-
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    access_token_expire_minutes: int = 20  # 20 minutes expiration
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
 @lru_cache(maxsize=1)

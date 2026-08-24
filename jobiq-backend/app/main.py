@@ -55,6 +55,7 @@ def create_app() -> FastAPI:
 
         # Run initial ingestion asynchronously in background thread so port binds immediately
         threading.Thread(target=bootstrap_data, daemon=True).start()
+        
 
     return app
 

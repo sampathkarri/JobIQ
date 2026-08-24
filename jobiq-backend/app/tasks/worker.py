@@ -6,8 +6,8 @@ settings = get_settings()
 
 celery_app = Celery(
     "jobiq_worker",
-    broker=settings.celery_broker_url,
-    backend=settings.celery_result_backend,
+    broker=getattr(settings, "celery_broker_url", "redis://localhost:6379/0"),
+    backend=getattr(settings, "celery_result_backend", "redis://localhost:6379/1"),
     include=["app.tasks.jobs"]
 )
 
