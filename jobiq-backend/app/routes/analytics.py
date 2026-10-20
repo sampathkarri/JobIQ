@@ -5,7 +5,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.utils.dependencies import get_current_active_user
-from app.models import Opportunity, Application, JobMatch, User
+from app.models import Opportunity, Application, User
 
 router = APIRouter(prefix="/analytics", tags=["analytics"])
 
@@ -79,13 +79,8 @@ def get_personal_analytics(
     status_counter = Counter(app.status for app in applications)
     status_breakdown = [{"status": k, "count": v} for k, v in status_counter.items()]
     
-    matches_agg = db.query(
-        func.count(JobMatch.id).label('total'),
-        func.avg(JobMatch.match_score).label('avg_score')
-    ).filter(JobMatch.user_id == current_user.id).first()
-    
-    total_matches = matches_agg.total or 0
-    avg_match_score = matches_agg.avg_score or 0.0
+    total_matches = 0
+    avg_match_score = 0.0
     
     funnel = {
         "saved": status_counter.get("saved", 0),

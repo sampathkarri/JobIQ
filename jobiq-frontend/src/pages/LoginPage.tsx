@@ -25,7 +25,8 @@ function LoginPage() {
       setAuth(response.access_token, user);
       navigate("/");
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Invalid email or password. Please try again.");
+      const detail = err.response?.data?.detail;
+      setError(typeof detail === "string" ? detail : "Invalid email or password. Please try again.");
     } finally {
       setLoading(false);
     }

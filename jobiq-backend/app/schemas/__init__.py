@@ -1,8 +1,6 @@
 from .auth import RegisterRequest, LoginRequest, LoginResponse, TokenPayload
 from .user import UserRead, UserUpdate
 from .application import ApplicationCreate, ApplicationRead, ApplicationUpdate, ApplicationListResponse
-from .resume import ResumeCreate, ResumeRead, ResumeListResponse
-from .job_match import JobMatchRead, JobMatchListResponse
 from .opportunity import (
     OpportunityCreate,
     OpportunityRead,
@@ -23,11 +21,6 @@ __all__ = [
     "ApplicationRead",
     "ApplicationUpdate",
     "ApplicationListResponse",
-    "ResumeCreate",
-    "ResumeRead",
-    "ResumeListResponse",
-    "JobMatchRead",
-    "JobMatchListResponse",
     "OpportunityCreate",
     "OpportunityRead",
     "OpportunityUpdate",

@@ -169,22 +169,6 @@ def get_opportunity_details(
     match_score = None
     match_reason = None
 
-    if current_user and isinstance(current_user, User):
-        match = (
-            db.query(JobMatch)
-            .filter(
-                and_(
-                    JobMatch.user_id == current_user.id,
-                    JobMatch.opportunity_id == opportunity_id,
-                )
-            )
-            .first()
-        )
-
-        if match:
-            match_score = match.match_score
-            match_reason = match.match_reason
-
     return {
         **_opportunity_to_read(opp, match_score).model_dump(),
         "match_reason": match_reason,

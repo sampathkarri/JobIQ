@@ -26,7 +26,14 @@ function SignupPage() {
       setAuth(response.access_token, user);
       navigate("/profile"); // Direct to profile to set preferences
     } catch (err: any) {
-      setError(err.response?.data?.detail || "Registration failed. Please check your information.");
+      const detail = err.response?.data?.detail;
+      if (typeof detail === "string") {
+        setError(detail);
+      } else if (Array.isArray(detail)) {
+        setError(detail.map((d: any) => d.msg || JSON.stringify(d)).join(", "));
+      } else {
+        setError("Registration failed. If you already have an account, please sign in below.");
+      }
     } finally {
       setLoading(false);
     }
@@ -42,7 +49,7 @@ function SignupPage() {
             </div>
           </Link>
           <h2 className="text-3xl font-extrabold text-white tracking-tight">Create your account</h2>
-          <p className="mt-2 text-sm text-slate-400">Join JobIQ to discover 1000+ AI-matched career opportunities</p>
+          <p className="mt-2 text-sm text-slate-400">Join JobIQ to discover and track 1000+ career opportunities</p>
         </div>
 
         <div className="bg-slate-900/80 border border-slate-800 p-8 rounded-2xl shadow-2xl backdrop-blur-md">
