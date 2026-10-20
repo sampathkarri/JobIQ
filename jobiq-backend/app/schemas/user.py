@@ -16,6 +16,7 @@ class UserRead(BaseModel):
     preferred_job_types: list[str] | None = None
     avatar_url: str | None = None
     is_active: bool
+    is_admin: bool = False
     created_at: datetime
     updated_at: datetime
     

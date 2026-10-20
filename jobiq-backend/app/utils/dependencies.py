@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from typing import Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
@@ -12,7 +13,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/v1/auth/login", auto_error=F
 
 
 def get_current_user(
-    token: str | None = Depends(oauth2_scheme),
+    token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
 ) -> User:
     """Decode the JWT token and return the corresponding User from the database."""
@@ -23,7 +24,7 @@ def get_current_user(
             headers={"WWW-Authenticate": "Bearer"},
         )
     payload = decode_access_token(token)
-    email: str | None = payload.get("sub")
+    email: Optional[str] = payload.get("sub")
     if email is None:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -41,9 +42,9 @@ def get_current_user(
 
 
 def get_current_user_optional(
-    token: str | None = Depends(oauth2_scheme),
+    token: Optional[str] = Depends(oauth2_scheme),
     db: Session = Depends(get_db),
-) -> User | None:
+) -> Optional[User]:
     """Optional authentication dependency. Returns User if valid token present, else None."""
     if not token:
         return None
@@ -65,5 +66,18 @@ def get_current_active_user(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Inactive user",
+        )
+    return current_user
+
+
+def get_current_admin_user(
+    current_user: User = Depends(get_current_active_user),
+) -> User:
+    """Ensure the current user has administrative privileges."""
+    is_admin = getattr(current_user, "is_admin", False) or current_user.email == "sampathsai7890@gmail.com"
+    if not is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required. Regular users cannot trigger system scraping or maintenance.",
         )
     return current_user

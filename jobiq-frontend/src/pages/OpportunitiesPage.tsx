@@ -10,7 +10,6 @@ import {
   Bookmark,
   Send,
   Sparkles,
-  RefreshCw,
   CheckCircle2,
   X,
   ChevronLeft,
@@ -85,18 +84,6 @@ function OpportunitiesPage() {
     },
   });
 
-  // Scraper Trigger Mutation
-  const ingestMutation = useMutation({
-    mutationFn: () => opportunitiesApi.triggerScrape(),
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ["opportunities"] });
-      showToast(`Scraping triggered successfully!`);
-    },
-    onError: () => {
-      showToast("Scraper run completed or already up to date.");
-    },
-  });
-
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(null), 4000);
@@ -142,15 +129,6 @@ function OpportunitiesPage() {
           >
             <Sparkles className="w-4 h-4 text-amber-300" />
             <span>+ Paste Job Link</span>
-          </button>
-
-          <button
-            onClick={() => ingestMutation.mutate()}
-            disabled={ingestMutation.isPending}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-indigo-300 border border-slate-700/80 font-semibold text-xs shadow-md transition-all disabled:opacity-50"
-          >
-            <RefreshCw className={`w-4 h-4 text-indigo-400 ${ingestMutation.isPending ? "animate-spin" : ""}`} />
-            <span>{ingestMutation.isPending ? "Scraping Live..." : "Fetch Live Jobs"}</span>
           </button>
         </div>
       </div>

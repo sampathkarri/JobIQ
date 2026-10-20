@@ -4,21 +4,17 @@ import { Link } from "react-router-dom";
 import {
   Briefcase,
   KanbanSquare,
-  Sparkles,
-  Bookmark,
+  BarChart3,
   ArrowRight,
   TrendingUp,
   Building2,
   MapPin,
-  DollarSign,
-  Plus,
-  RefreshCw,
+  Mic,
   Zap,
 } from "lucide-react";
 import { useAuthStore } from "../store/useAuthStore";
 import { opportunitiesApi } from "../api/opportunities";
 import { applicationsApi } from "../api/applications";
-import { jobMatchesApi } from "../api/jobMatches";
 import { analyticsApi } from "../api/analytics";
 
 function HomePage() {
@@ -27,12 +23,6 @@ function HomePage() {
   const { data: opportunities, isLoading: oppsLoading } = useQuery({
     queryKey: ["opportunities", "recent"],
     queryFn: () => opportunitiesApi.getOpportunities({ page: 1, per_page: 6 }),
-  });
-
-  const { data: topMatches } = useQuery({
-    queryKey: ["jobMatches", "top"],
-    queryFn: () => jobMatchesApi.getTopMatches(),
-    enabled: isAuthenticated,
   });
 
   const { data: applications } = useQuery({
@@ -56,7 +46,7 @@ function HomePage() {
           <div className="space-y-2 max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-indigo-300 text-xs font-semibold uppercase tracking-wider">
               <Zap className="w-3.5 h-3.5 text-indigo-400" />
-              AI Career Operating System
+              Career Pipeline Operating System
             </div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
               Welcome back,{" "}
@@ -66,7 +56,7 @@ function HomePage() {
               !
             </h1>
             <p className="text-slate-300 text-sm sm:text-base leading-relaxed">
-              JobIQ has aggregated and ML-scored top career opportunities tailored to your target skills and salary expectations.
+              JobIQ aggregates verified live opportunities across top portals and tracks your entire job search through an interactive Kanban board.
             </p>
           </div>
 
@@ -79,11 +69,11 @@ function HomePage() {
               <span>Explore Jobs</span>
             </Link>
             <Link
-              to="/resumes"
+              to="/interview-prep"
               className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border border-slate-700/60 font-semibold text-sm transition-all"
             >
-              <Sparkles className="w-4 h-4 text-purple-400" />
-              <span>Upload Resume</span>
+              <Mic className="w-4 h-4 text-purple-400" />
+              <span>Interview Prep</span>
             </Link>
           </div>
         </div>
@@ -97,9 +87,9 @@ function HomePage() {
           </div>
           <div>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Total Aggregated</p>
-            <h3 className="text-2xl font-bold text-white mt-0.5">{opportunities?.total || 12}+</h3>
+            <h3 className="text-2xl font-bold text-white mt-0.5">{opportunities?.total || 425}+</h3>
             <p className="text-xs text-indigo-400 mt-1 flex items-center gap-1">
-              <TrendingUp className="w-3 h-3" /> Scraped daily
+              <TrendingUp className="w-3 h-3" /> Automated 2 AM Cron
             </p>
           </div>
         </div>
@@ -117,12 +107,12 @@ function HomePage() {
 
         <div className="bg-slate-900/60 border border-slate-800 p-5 rounded-2xl flex items-center gap-4 shadow-xl">
           <div className="w-12 h-12 rounded-xl bg-purple-500/10 border border-purple-500/20 text-purple-400 flex items-center justify-center shrink-0">
-            <Sparkles className="w-6 h-6" />
+            <BarChart3 className="w-6 h-6" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">AI High Matches</p>
-            <h3 className="text-2xl font-bold text-white mt-0.5">{topMatches?.items?.length || 0}</h3>
-            <p className="text-xs text-purple-400 mt-1">Pre-calculated score</p>
+            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Pipeline Stages</p>
+            <h3 className="text-2xl font-bold text-white mt-0.5">4 Stages</h3>
+            <p className="text-xs text-purple-400 mt-1">Applied, Interview, Offer, Reject</p>
           </div>
         </div>
 
@@ -132,7 +122,7 @@ function HomePage() {
           </div>
           <div>
             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Interview Questions</p>
-            <h3 className="text-2xl font-bold text-white mt-0.5">300</h3>
+            <h3 className="text-2xl font-bold text-white mt-0.5">300+</h3>
             <p className="text-xs text-pink-400 mt-1">Across 12 technical domains</p>
           </div>
         </div>
@@ -237,19 +227,19 @@ function HomePage() {
               Quick Launchpad
             </h3>
             <p className="text-xs text-slate-400 leading-relaxed">
-              Accelerate your application response rates with built-in AI tools.
+              Accelerate your application pipeline and technical interview preparation.
             </p>
 
             <div className="space-y-3">
               <Link
-                to="/resumes"
+                to="/applications"
                 className="flex items-center justify-between p-3.5 rounded-xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/50 text-sm font-semibold text-slate-200 transition-colors group"
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center">
-                    <Sparkles className="w-4 h-4" />
+                    <KanbanSquare className="w-4 h-4" />
                   </div>
-                  <span>Parse Resume (NLP)</span>
+                  <span>Kanban Pipeline Tracker</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-slate-500 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -260,9 +250,9 @@ function HomePage() {
               >
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center">
-                    <Plus className="w-4 h-4" />
+                    <Mic className="w-4 h-4" />
                   </div>
-                  <span>AI Voice Practice</span>
+                  <span>Interview Prep (300+ Questions)</span>
                 </div>
                 <ArrowRight className="w-4 h-4 text-slate-500 group-hover:translate-x-1 transition-transform" />
               </Link>
@@ -282,43 +272,52 @@ function HomePage() {
             </div>
           </div>
 
-          {/* AI Match Overview */}
+          {/* Active Pipeline Breakdown */}
           <div className="bg-slate-900/60 border border-slate-800 p-6 rounded-2xl space-y-4 shadow-xl">
             <div className="flex justify-between items-center">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-purple-400" />
-                AI Profile Match
+                <KanbanSquare className="w-4 h-4 text-indigo-400" />
+                Pipeline Status
               </h3>
-              <Link to="/job-matches" className="text-xs text-indigo-400 hover:text-indigo-300">
-                View All &rarr;
+              <Link to="/applications" className="text-xs text-indigo-400 hover:text-indigo-300">
+                Open Board &rarr;
               </Link>
             </div>
 
-            {topMatches?.items && topMatches.items.length > 0 ? (
-              <div className="space-y-3">
-                {topMatches.items.slice(0, 3).map((match) => (
-                  <div key={match.id} className="p-3 bg-slate-950/80 rounded-xl border border-slate-800 text-xs">
-                    <div className="flex justify-between items-center mb-1">
-                      <span className="font-semibold text-slate-200">Match #{match.id}</span>
-                      <span className="px-2 py-0.5 rounded bg-purple-500/20 text-purple-300 font-bold">
-                        {match.match_score}% Match
-                      </span>
-                    </div>
-                    <p className="text-slate-400 line-clamp-1">{match.match_reason}</p>
-                  </div>
-                ))}
+            <div className="space-y-2.5">
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 text-xs">
+                <span className="flex items-center gap-2 text-slate-300">
+                  <span className="w-2 h-2 rounded-full bg-blue-400" /> Applied
+                </span>
+                <span className="font-bold text-white">
+                  {applications?.items?.filter((a: any) => a.status === "applied").length || 0}
+                </span>
               </div>
-            ) : (
-              <div className="text-center py-6 text-slate-500 text-xs space-y-2">
-                <p>Upload your resume to generate automated match scores against 1000+ daily jobs.</p>
-                <Link
-                  to="/resumes"
-                  className="inline-block text-xs font-semibold text-indigo-400 hover:text-indigo-300"
-                >
-                  Upload Resume &rarr;
-                </Link>
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 text-xs">
+                <span className="flex items-center gap-2 text-slate-300">
+                  <span className="w-2 h-2 rounded-full bg-amber-400" /> Interviewing
+                </span>
+                <span className="font-bold text-white">
+                  {applications?.items?.filter((a: any) => a.status === "interviewing").length || 0}
+                </span>
               </div>
-            )}
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 text-xs">
+                <span className="flex items-center gap-2 text-slate-300">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400" /> Offered
+                </span>
+                <span className="font-bold text-white">
+                  {applications?.items?.filter((a: any) => a.status === "offered").length || 0}
+                </span>
+              </div>
+              <div className="flex items-center justify-between p-2.5 rounded-xl bg-slate-950/60 border border-slate-800/80 text-xs">
+                <span className="flex items-center gap-2 text-slate-300">
+                  <span className="w-2 h-2 rounded-full bg-rose-400" /> Rejected
+                </span>
+                <span className="font-bold text-white">
+                  {applications?.items?.filter((a: any) => a.status === "rejected").length || 0}
+                </span>
+              </div>
+            </div>
           </div>
         </div>
       </div>

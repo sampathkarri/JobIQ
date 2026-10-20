@@ -23,11 +23,10 @@ class User(Base):
     avatar_url: Mapped[Optional[str]] = mapped_column(String(500))
     
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
+    is_admin: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), onupdate=func.now())
 
     applications = relationship("Application", back_populates="user", cascade="all, delete-orphan")
-    resumes = relationship("Resume", back_populates="user", cascade="all, delete-orphan")
-    job_matches = relationship("JobMatch", back_populates="user", cascade="all, delete-orphan")
     custom_jobs = relationship("CustomJob", back_populates="user", cascade="all, delete-orphan")

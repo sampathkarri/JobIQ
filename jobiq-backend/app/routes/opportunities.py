@@ -7,7 +7,6 @@ from sqlalchemy import and_, or_, cast, String
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
-from app.models.job_match import JobMatch
 from app.models.opportunity import Opportunity
 from app.models.user import User
 from app.schemas.opportunity import (
@@ -117,28 +116,7 @@ def list_opportunities(
     offset = (page - 1) * per_page
     opportunities = query.order_by(Opportunity.created_at.desc()).offset(offset).limit(per_page).all()
 
-    items = []
-    if current_user and isinstance(current_user, User):
-        for opp in opportunities:
-            match = (
-                db.query(JobMatch)
-                .filter(
-                    and_(
-                        JobMatch.user_id == current_user.id,
-                        JobMatch.opportunity_id == opp.id,
-                    )
-                )
-                .first()
-            )
-
-            items.append(
-                _opportunity_to_read(
-                    opp,
-                    match_score=match.match_score if match else None,
-                )
-            )
-    else:
-        items = [_opportunity_to_read(opp) for opp in opportunities]
+    items = [_opportunity_to_read(opp) for opp in opportunities]
 
     return OpportunityListResponse(
         items=items,
@@ -154,29 +132,22 @@ def get_recommended_opportunities(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_active_user),
 ):
-    """Get personalized recommendations based on AI Job Matches."""
-    matches = (
-        db.query(JobMatch)
-        .filter(JobMatch.user_id == current_user.id)
-        .order_by(JobMatch.match_score.desc())
-        .limit(limit)
-        .all()
-    )
-
-    opportunities = []
-    for match in matches:
-        opp = db.query(Opportunity).filter(Opportunity.id == match.opportunity_id).first()
-
-        if opp:
-            opportunities.append(
-                _opportunity_to_read(
-                    opp,
-                    match_score=match.match_score,
-                )
-            )
+    """Get personalized recommendations based on active opportunities."""
+    query = db.query(Opportunity).filter(Opportunity.is_active == True)
+    if current_user.current_role:
+        query = query.filter(Opportunity.title.ilike(f"%{current_user.current_role}%"))
+    opportunities = query.order_by(Opportunity.created_at.desc()).limit(limit).all()
+    if not opportunities:
+        opportunities = (
+            db.query(Opportunity)
+            .filter(Opportunity.is_active == True)
+            .order_by(Opportunity.created_at.desc())
+            .limit(limit)
+            .all()
+        )
 
     return OpportunityListResponse(
-        items=opportunities,
+        items=[_opportunity_to_read(opp) for opp in opportunities],
         total=len(opportunities),
         page=1,
         per_page=limit,

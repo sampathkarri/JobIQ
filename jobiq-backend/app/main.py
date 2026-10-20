@@ -1,20 +1,19 @@
 import threading
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-
 from app import models  # noqa: F401
 from app.core.bootstrap import bootstrap_data
 from app.core.config import get_settings
 from app.core.database import Base, engine
 from app.routes import api_router
-
+from app.services.scheduler import start_scheduler
 
 def create_app() -> FastAPI:
     settings = get_settings()
     app = FastAPI(
         title=settings.app_name,
         debug=settings.debug,
-        description="JobIQ AI-Powered Career Opportunities Platform API",
+        description="JobIQ - Automated Career Opportunities Aggregation & Pipeline Tracking Platform API",
     )
 
     origins = [
@@ -55,6 +54,12 @@ def create_app() -> FastAPI:
 
         # Run initial ingestion asynchronously in background thread so port binds immediately
         threading.Thread(target=bootstrap_data, daemon=True).start()
+
+        # Start automated 02:00 AM daily cron scheduler
+        try:
+            start_scheduler()
+        except Exception as e:
+            print(f"Error starting scheduler: {e}")
         
 
     return app

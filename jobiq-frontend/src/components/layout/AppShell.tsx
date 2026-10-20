@@ -4,20 +4,19 @@ import {
   LayoutDashboard,
   Briefcase,
   KanbanSquare,
-  FileText,
-  Sparkles,
-  Bookmark,
   BarChart3,
   Mic,
-  User as UserIcon,
   LogOut,
   LogIn,
   Menu,
   X,
   Zap,
+  RefreshCw,
+  ShieldAlert,
 } from "lucide-react";
 import { useAuthStore } from "../../store/useAuthStore";
 import { authApi } from "../../api/auth";
+import { adminApi } from "../../api/admin";
 
 type AppShellProps = {
   children: React.ReactNode;
@@ -27,16 +26,33 @@ const navItems = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
   { to: "/opportunities", label: "Opportunities", icon: Briefcase },
   { to: "/applications", label: "Pipeline", icon: KanbanSquare },
-  { to: "/resumes", label: "Resumes", icon: FileText },
-  { to: "/job-matches", label: "AI Matches", icon: Sparkles },
   { to: "/interview-prep", label: "Interview Prep", icon: Mic },
+  { to: "/analytics", label: "Analytics", icon: BarChart3 },
 ];
 
 function AppShell({ children }: AppShellProps) {
   const { user, isAuthenticated, logout, setUser, token } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [adminScraping, setAdminScraping] = useState(false);
+  const [adminMsg, setAdminMsg] = useState<string | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  const isAdmin = user?.is_admin || user?.email === "sampathsai7890@gmail.com";
+
+  const handleAdminScrape = async () => {
+    setAdminScraping(true);
+    try {
+      await adminApi.triggerScrape();
+      setAdminMsg("Admin: Live scrape completed successfully!");
+      setTimeout(() => setAdminMsg(null), 4000);
+    } catch (err: any) {
+      setAdminMsg(err.response?.data?.detail || "Admin scrape failed.");
+      setTimeout(() => setAdminMsg(null), 4000);
+    } finally {
+      setAdminScraping(false);
+    }
+  };
 
   // Fetch current user on mount if token exists but user isn't loaded
   useEffect(() => {
@@ -74,7 +90,7 @@ function AppShell({ children }: AppShellProps) {
                 Job<span className="text-indigo-400">IQ</span>
               </span>
               <span className="hidden sm:inline-block ml-2 text-[10px] uppercase tracking-widest font-semibold px-1.5 py-0.5 rounded bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
-                AI Platform
+                Career OS
               </span>
             </div>
           </Link>
@@ -104,6 +120,19 @@ function AppShell({ children }: AppShellProps) {
 
           {/* Right Action Menu */}
           <div className="flex items-center gap-3">
+            {/* Admin Scrape Action (Visible ONLY to Admin) */}
+            {isAdmin && isAuthenticated && (
+              <button
+                onClick={handleAdminScrape}
+                disabled={adminScraping}
+                title="Admin Trigger Scrape"
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-300 text-xs font-semibold hover:bg-amber-500/20 transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${adminScraping ? "animate-spin" : ""}`} />
+                <span>{adminScraping ? "Scraping..." : "Admin Scrape"}</span>
+              </button>
+            )}
+
             {isAuthenticated ? (
               <div className="flex items-center gap-3">
                 <Link
@@ -182,6 +211,13 @@ function AppShell({ children }: AppShellProps) {
         )}
       </header>
 
+      {/* Admin Toast Notification */}
+      {adminMsg && (
+        <div className="bg-amber-500/10 border-b border-amber-500/30 text-amber-300 text-xs text-center py-2 px-4 font-semibold">
+          {adminMsg}
+        </div>
+      )}
+
       {/* Main Content Area */}
       <main className="flex-1 mx-auto w-full max-w-7xl px-4 sm:px-6 py-6 lg:py-8">{children}</main>
 
@@ -191,12 +227,12 @@ function AppShell({ children }: AppShellProps) {
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-indigo-400" />
             <span className="font-semibold text-slate-300">JobIQ Platform</span>
-            <span>— AI-Powered Career Operating System</span>
+            <span>— Automated Career Opportunities & Pipeline Operating System</span>
           </div>
           <div className="flex items-center gap-4 text-slate-400">
-            <span>Aggregating 1000+ jobs daily</span>
+            <span>Aggregating 400+ jobs daily</span>
             <span>•</span>
-            <span>Scikit-Learn ML Powered</span>
+            <span>Automated 2:00 AM Cron Ingestion</span>
           </div>
         </div>
       </footer>

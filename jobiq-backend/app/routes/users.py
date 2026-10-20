@@ -41,6 +41,7 @@ def _user_to_read(user: User) -> UserRead:
         preferred_job_types=preferred_job_types,
         avatar_url=user.avatar_url,
         is_active=user.is_active,
+        is_admin=getattr(user, "is_admin", False) or user.email == "sampathsai7890@gmail.com",
         created_at=user.created_at,
         updated_at=user.updated_at,
     )

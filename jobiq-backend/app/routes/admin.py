@@ -1,21 +1,25 @@
 from __future__ import annotations
 
+from typing import Optional
 from fastapi import APIRouter, Depends
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.opportunity import Opportunity
+from app.models.user import User
+from app.utils.dependencies import get_current_admin_user
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
 
 @router.post("/scrape")
 def trigger_scrape(
-    source: str | None = None,
+    source: Optional[str] = None,
+    current_user: User = Depends(get_current_admin_user),
     db: Session = Depends(get_db),
 ):
-    """Trigger scraping. If source is provided, scrape only that source."""
+    """Trigger scraping. Strictly restricted to administrative users."""
     try:
         from app.tasks.jobs import scrape_all_sources, scrape_single_source
 
@@ -25,7 +29,7 @@ def trigger_scrape(
             task = scrape_all_sources.delay()
         return {"message": "Scraping triggered", "task_id": task.id}
     except Exception:
-        # Celery/Redis not running — run synchronously instead
+        # Run synchronously
         from app.services.opportunity_ingestion import ingest_all_sources
 
         result = ingest_all_sources(db)
@@ -33,8 +37,11 @@ def trigger_scrape(
 
 
 @router.post("/deduplicate")
-def trigger_deduplicate(db: Session = Depends(get_db)):
-    """Trigger deduplication of opportunities."""
+def trigger_deduplicate(
+    current_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db),
+):
+    """Trigger deduplication of opportunities. Strictly restricted to admin users."""
     try:
         from app.tasks.jobs import deduplicate_jobs
 
@@ -48,7 +55,10 @@ def trigger_deduplicate(db: Session = Depends(get_db)):
 
 
 @router.get("/stats")
-def get_scraper_stats(db: Session = Depends(get_db)):
+def get_scraper_stats(
+    current_user: User = Depends(get_current_admin_user),
+    db: Session = Depends(get_db),
+):
     """Get opportunity counts grouped by source."""
     rows = (
         db.query(Opportunity.source, func.count(Opportunity.id))

@@ -209,10 +209,10 @@ function InterviewPrepPage() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
             <Brain className="w-7 h-7 text-indigo-400" />
-            AI Mock Interviewer
+            Technical Mock Interview & Practice
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Practice top interview questions across DBMS, OOPs, Computer Networks, SQL, DSA, Backend, Frontend, Python, and Java.
+            Practice 300+ interview questions across DBMS, OOPs, Computer Networks, SQL, DSA, Backend, Frontend, Python, and Java with real-time speech evaluation.
           </p>
         </div>
 
