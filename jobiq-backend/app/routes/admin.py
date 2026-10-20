@@ -8,6 +8,8 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.opportunity import Opportunity
 from app.models.user import User
+from app.scrapers.deduplicator import deduplicate_opportunities
+from app.services.opportunity_ingestion import ingest_all_sources
 from app.utils.dependencies import get_current_admin_user
 
 router = APIRouter(prefix="/admin", tags=["admin"])
@@ -20,20 +22,8 @@ def trigger_scrape(
     db: Session = Depends(get_db),
 ):
     """Trigger scraping. Strictly restricted to administrative users."""
-    try:
-        from app.tasks.jobs import scrape_all_sources, scrape_single_source
-
-        if source:
-            task = scrape_single_source.delay(source)
-        else:
-            task = scrape_all_sources.delay()
-        return {"message": "Scraping triggered", "task_id": task.id}
-    except Exception:
-        # Run synchronously
-        from app.services.opportunity_ingestion import ingest_all_sources
-
-        result = ingest_all_sources(db)
-        return {"message": "Scraping completed (sync)", "result": result}
+    result = ingest_all_sources(db)
+    return {"message": "Scraping completed", "result": result}
 
 
 @router.post("/deduplicate")
@@ -42,16 +32,8 @@ def trigger_deduplicate(
     db: Session = Depends(get_db),
 ):
     """Trigger deduplication of opportunities. Strictly restricted to admin users."""
-    try:
-        from app.tasks.jobs import deduplicate_jobs
-
-        task = deduplicate_jobs.delay()
-        return {"message": "Deduplication triggered", "task_id": task.id}
-    except Exception:
-        from app.scrapers.deduplicator import deduplicate_opportunities
-
-        removed = deduplicate_opportunities(db)
-        return {"message": "Deduplication completed (sync)", "duplicates_removed": removed}
+    removed = deduplicate_opportunities(db)
+    return {"message": "Deduplication completed", "duplicates_removed": removed}
 
 
 @router.get("/stats")

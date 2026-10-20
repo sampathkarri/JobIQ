@@ -63,9 +63,4 @@ export const opportunitiesApi = {
     const response = await apiClient.post('/opportunities/', data);
     return response.data;
   },
-
-  triggerScrape: async (): Promise<{ message: string; task_id?: string; result?: any }> => {
-    const response = await apiClient.post('/admin/scrape');
-    return response.data;
-  },
 };
