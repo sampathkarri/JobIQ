@@ -7,10 +7,9 @@ from sqlalchemy.orm import Session
 
 from app.core.database import get_db
 from app.models.opportunity import Opportunity
-from app.models.user import User
 from app.scrapers.deduplicator import deduplicate_opportunities
 from app.services.opportunity_ingestion import ingest_all_sources
-from app.utils.dependencies import get_current_admin_user
+from app.utils.dependencies import verify_admin_or_cron
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -18,27 +17,27 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 @router.post("/scrape")
 def trigger_scrape(
     source: Optional[str] = None,
-    current_user: User = Depends(get_current_admin_user),
+    authorized: bool = Depends(verify_admin_or_cron),
     db: Session = Depends(get_db),
 ):
-    """Trigger scraping. Strictly restricted to administrative users."""
+    """Trigger scraping. Restricted to Admin users and authorized Cron triggers."""
     result = ingest_all_sources(db)
     return {"message": "Scraping completed", "result": result}
 
 
 @router.post("/deduplicate")
 def trigger_deduplicate(
-    current_user: User = Depends(get_current_admin_user),
+    authorized: bool = Depends(verify_admin_or_cron),
     db: Session = Depends(get_db),
 ):
-    """Trigger deduplication of opportunities. Strictly restricted to admin users."""
+    """Trigger deduplication of opportunities. Restricted to Admin users and authorized Cron triggers."""
     removed = deduplicate_opportunities(db)
     return {"message": "Deduplication completed", "duplicates_removed": removed}
 
 
 @router.get("/stats")
 def get_scraper_stats(
-    current_user: User = Depends(get_current_admin_user),
+    authorized: bool = Depends(verify_admin_or_cron),
     db: Session = Depends(get_db),
 ):
     """Get opportunity counts grouped by source."""

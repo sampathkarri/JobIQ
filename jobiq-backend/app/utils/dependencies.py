@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 from typing import Optional
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.database import get_db
 from app.models.user import User
 from app.utils.auth import decode_access_token
@@ -81,3 +82,29 @@ def get_current_admin_user(
             detail="Admin privileges required. Regular users cannot trigger system scraping or maintenance.",
         )
     return current_user
+
+
+def verify_admin_or_cron(
+    x_cron_secret: Optional[str] = Header(None, alias="X-Cron-Secret"),
+    token: Optional[str] = Depends(oauth2_scheme),
+    db: Session = Depends(get_db),
+) -> bool:
+    """Authorize either an authenticated Admin user or an authorized Cron/GitHub Actions trigger."""
+    settings = get_settings()
+    if x_cron_secret and x_cron_secret == settings.cron_secret:
+        return True
+
+    if not token:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication or valid cron secret required",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    user = get_current_user(token=token, db=db)
+    is_admin = getattr(user, "is_admin", False) or user.email == "sampathsai7890@gmail.com"
+    if not is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin privileges required. Regular users cannot trigger system scraping or maintenance.",
+        )
+    return True

@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     jwt_secret_key: str = "jobiq-dev-secret-key-change-in-production"
     jwt_algorithm: str = "HS256"
     access_token_expire_minutes: int = 60 * 24 * 7  # 7 days expiration
+    cron_secret: str = "jobiq-cron-secret-key-2026"
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
