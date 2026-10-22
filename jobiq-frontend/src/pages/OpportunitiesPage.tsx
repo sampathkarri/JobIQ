@@ -15,15 +15,19 @@ import {
   ChevronLeft,
   ChevronRight,
   Globe,
+  RefreshCw,
 } from "lucide-react";
 import { opportunitiesApi, Opportunity } from "../api/opportunities";
 import { applicationsApi } from "../api/applications";
+import { adminApi } from "../api/admin";
 import { useAuthStore } from "../store/useAuthStore";
 import { PasteJobModal } from "../components/PasteJobModal";
 
 function OpportunitiesPage() {
   const queryClient = useQueryClient();
-  // const { isAuthenticated } = useAuthStore();
+  const { user } = useAuthStore();
+  const isAdmin = user?.is_admin || user?.email === "sampathsai7890@gmail.com";
+  const [isAdminSyncing, setIsAdminSyncing] = useState(false);
 
   // Search & Filter State
   const [searchTerm, setSearchTerm] = useState("");
@@ -42,6 +46,31 @@ function OpportunitiesPage() {
 
   // Paste Link Modal state
   const [isPasteModalOpen, setIsPasteModalOpen] = useState(false);
+
+  const handleAdminSync = async () => {
+    setIsAdminSyncing(true);
+    showToast("🚀 Live scrape initiated! Scraping LinkedIn, Unstop & Internshala in background...");
+    try {
+      await adminApi.triggerScrape();
+
+      // Progressive cache invalidations to pull in jobs as they are saved
+      const intervals = [3000, 8000, 15000, 25000];
+      intervals.forEach((delay) => {
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ["opportunities"] });
+        }, delay);
+      });
+
+      setTimeout(() => {
+        setIsAdminSyncing(false);
+        queryClient.invalidateQueries({ queryKey: ["opportunities"] });
+        showToast("✨ Scraping complete! Fresh live opportunities are now visible.");
+      }, 25000);
+    } catch (err: any) {
+      setIsAdminSyncing(false);
+      showToast(err.response?.data?.detail || "Admin scrape trigger failed.");
+    }
+  };
 
   // Fetch Opportunities Query
   const { data, isLoading, isFetching } = useQuery({
@@ -118,11 +147,28 @@ function OpportunitiesPage() {
             Discover Opportunities
           </h1>
           <p className="text-sm text-slate-400 mt-1">
-            Browse 1000+ jobs, internships, hackathons, and remote positions aggregated daily.
+            {data?.total !== undefined ? (
+              <span className="text-indigo-300 font-semibold">{data.total} active opportunities</span>
+            ) : (
+              "Browse 1000+ opportunities"
+            )}{" "}
+            aggregated across LinkedIn, Unstop, and Internshala.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 self-start sm:self-auto">
+        <div className="flex items-center gap-2.5 self-start sm:self-auto">
+          {isAdmin && (
+            <button
+              onClick={handleAdminSync}
+              disabled={isAdminSyncing}
+              title="Run Live Scraper Pipeline across LinkedIn, Unstop, and Internshala (Admin Only)"
+              className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold text-xs shadow-sm transition-all disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${isAdminSyncing ? "animate-spin" : ""}`} />
+              <span>{isAdminSyncing ? "Syncing Jobs..." : "⚡ Sync Live Jobs"}</span>
+            </button>
+          )}
+
           <button
             onClick={() => setIsPasteModalOpen(true)}
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold text-xs shadow-lg shadow-indigo-500/25 transition-all transform hover:-translate-y-0.5"

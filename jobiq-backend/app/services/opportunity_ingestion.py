@@ -20,25 +20,40 @@ def ingest_opportunities(db: Session, scraper: BaseScraper) -> dict:
     created = 0
     updated = 0
 
+    if not opps:
+        return {"fetched": 0, "created": 0, "updated": 0}
+
+    # Preload existing active opportunities for fast in-memory matching
+    existing_records = (
+        db.query(Opportunity.id, Opportunity.source_url, Opportunity.title, Opportunity.company, Opportunity.description)
+        .filter(Opportunity.is_active == True)
+        .all()
+    )
+    existing_urls = {r.source_url: r for r in existing_records if r.source_url}
+    existing_title_company = [
+        (r.title.strip(), r.company.strip())
+        for r in existing_records
+        if r.title and r.company
+    ]
+
     for scraped in opps:
         if not scraped.source_url:
             continue
 
-        existing = (
-            db.query(Opportunity).filter(Opportunity.source_url == scraped.source_url).first()
-        )
-
-        if existing:
+        if scraped.source_url in existing_urls:
+            existing = existing_urls[scraped.source_url]
             if scraped.description and existing.description != scraped.description:
-                existing.description = scraped.description
-                updated += 1
+                db_opp = db.query(Opportunity).filter(Opportunity.id == existing.id).first()
+                if db_opp:
+                    db_opp.description = scraped.description
+                    db.commit()
+                    updated += 1
             continue
 
-        # Check fuzzy match
-        potential_dups = db.query(Opportunity).filter(Opportunity.is_active == True).all()
+        # Fast in-memory fuzzy duplicate check
         is_dup = False
-        for p in potential_dups:
-            if is_duplicate(scraped.title, scraped.company, p.title, p.company):
+        for title, company in existing_title_company:
+            if is_duplicate(scraped.title, scraped.company, title, company):
                 is_dup = True
                 break
 
@@ -67,6 +82,8 @@ def ingest_opportunities(db: Session, scraper: BaseScraper) -> dict:
             try:
                 db.commit()
                 created += 1
+                existing_urls[scraped.source_url] = new_opp
+                existing_title_company.append((scraped.title.strip(), scraped.company.strip()))
             except IntegrityError:
                 db.rollback()
 

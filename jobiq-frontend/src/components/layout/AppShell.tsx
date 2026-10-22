@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, NavLink, useLocation, useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   LayoutDashboard,
   Briefcase,
@@ -31,6 +32,7 @@ const navItems = [
 ];
 
 function AppShell({ children }: AppShellProps) {
+  const queryClient = useQueryClient();
   const { user, isAuthenticated, logout, setUser, token } = useAuthStore();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [adminScraping, setAdminScraping] = useState(false);
@@ -44,13 +46,26 @@ function AppShell({ children }: AppShellProps) {
     setAdminScraping(true);
     try {
       await adminApi.triggerScrape();
-      setAdminMsg("Admin: Live scrape completed successfully!");
-      setTimeout(() => setAdminMsg(null), 4000);
+      setAdminMsg("🚀 Ingestion pipeline started in background! Live jobs will refresh automatically...");
+      
+      // Periodically invalidate queries to pull newly inserted jobs as they stream into the database
+      const refreshDelays = [3000, 8000, 15000, 25000];
+      refreshDelays.forEach((delay) => {
+        setTimeout(() => {
+          queryClient.invalidateQueries({ queryKey: ["opportunities"] });
+          queryClient.invalidateQueries({ queryKey: ["stats"] });
+        }, delay);
+      });
+
+      setTimeout(() => {
+        setAdminMsg("✅ Live scrape completed! Newly scraped opportunities are visible.");
+        setAdminScraping(false);
+        queryClient.invalidateQueries({ queryKey: ["opportunities"] });
+      }, 25000);
     } catch (err: any) {
       setAdminMsg(err.response?.data?.detail || "Admin scrape failed.");
-      setTimeout(() => setAdminMsg(null), 4000);
-    } finally {
       setAdminScraping(false);
+      setTimeout(() => setAdminMsg(null), 5000);
     }
   };
 
