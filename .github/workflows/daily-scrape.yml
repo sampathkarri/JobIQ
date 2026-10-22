@@ -26,16 +26,16 @@ jobs:
           RESPONSE=$(curl -s -w "\nHTTP_STATUS:%{http_code}" -X POST "https://jobiq-3vun.onrender.com/api/v1/admin/scrape" \
             -H "Content-Type: application/json" \
             -H "X-Cron-Secret: ${{ secrets.CRON_SECRET || 'jobiq-cron-secret-key-2026' }}" \
-            --max-time 180)
+            --max-time 60)
           
           echo "$RESPONSE"
           
           HTTP_STATUS=$(echo "$RESPONSE" | grep "HTTP_STATUS" | cut -d':' -f2)
           if [ "$HTTP_STATUS" -ne 200 ]; then
-            echo "❌ Scraping failed with HTTP status: $HTTP_STATUS"
+            echo "❌ Scraping trigger failed with HTTP status: $HTTP_STATUS"
             exit 1
           fi
-          echo "✅ Scraper successfully fetched and saved opportunities!"
+          echo "✅ Ingestion pipeline triggered successfully in background!"
 
       - name: Trigger Deduplication Pipeline
         run: |
